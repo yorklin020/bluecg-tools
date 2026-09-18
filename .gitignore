@@ -1,0 +1,8 @@
+# 算檔公式說明，自用不公開
+魔力寶貝算檔說明.md
+
+# Excel 原稿與素材，體積大且 git 管不好，留在 OneDrive
+*.xlsm
+*.xlsx
+*.zip
+bak/
