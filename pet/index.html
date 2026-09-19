@@ -154,6 +154,14 @@
   .stat-table input[type=number]{-moz-appearance:textfield;appearance:textfield;}
   .stat-table tr.emph td{color:var(--gold);font-size:.88rem;}
   .stat-table tr.emph td:first-child{color:var(--text);font-size:.82rem;}
+  .stat-table input[readonly]{background:var(--bg);color:var(--muted);cursor:not-allowed;}
+  .stat-table .row-hint.neg{color:var(--coral);}
+  /* 配點策略列：radio 壓在下一列五個輸入框的正上方 */
+  .stat-table tr.strat-row td{border-bottom:none;padding-bottom:2px;}
+  .stat-table td.strat{text-align:center;}
+  .stat-table td.strat input{width:auto;margin:0;accent-color:var(--gold);cursor:pointer;}
+  .strat-mix{display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
+  .strat-mix input{width:auto;margin:0;accent-color:var(--gold);cursor:pointer;}
   [hidden]{display:none !important;}
   .mode-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
   .radio{
@@ -229,7 +237,7 @@
     <div>
       <a class="back-link" href="../">← 回工具集</a>
       <h1>魔力寶貝算檔器</h1>
-      <p>資料同步日期 2026-09-07・寵物資料庫 2570 筆・公式對應〈魔力寶貝算檔說明〉v2026-09-07</p>
+      <p>版本 2026-09-19・資料同步日期 2026-09-07・寵物資料庫 2570 筆・公式對應〈魔力寶貝算檔說明〉v2026-09-07</p>
     </div>
     <button type="button" class="btn" id="theme-toggle">切換暗色</button>
   </header>
@@ -279,6 +287,7 @@
             <tbody>
               <tr id="fwd-top"></tr>
               <tr id="fwd-drop"></tr>
+              <tr id="fwd-strat" class="strat-row"></tr>
               <tr id="fwd-alloc"></tr>
               <tr id="fwd-rand"></tr>
             </tbody>
@@ -287,11 +296,6 @@
       </div>
       </div>
       <div class="col-right">
-      <div class="card">
-        <h2>爆點判定</h2>
-        <div class="banner" id="fwd-burst-banner"></div>
-      </div>
-
       <div class="card">
         <h2>五圍 BP</h2>
         <div class="table-scroll">
@@ -526,9 +530,19 @@ function buildInputRow(containerId, prefix, label, defaults, step) {
   el.innerHTML = `<td class="row-label">${label}</td>${cells}`;
 }
 
+// 配點策略列：label 格放「混點」，後面五格對齊 體力強速魔
+function buildStrategyRow(rowId, prefix) {
+  const cells = LABELS.map((l, i) =>
+    `<td class="strat"><input type="radio" name="${prefix}-strat" value="${i}" aria-label="全配${l}"></td>`
+  ).join('');
+  document.getElementById(rowId).innerHTML =
+    `<td class="row-label"><label class="strat-mix"><input type="radio" name="${prefix}-strat" value="mix" checked>混點</label></td>${cells}`;
+}
+
 buildInputRow('fwd-top', 'fwd-top', '手動輸入檔次<span class="row-hint">直接填五圍檔位</span>', [0,0,0,0,0]);
 buildInputRow('fwd-drop', 'fwd-drop', '掉檔<span class="row-hint">0~4</span>', [0,0,0,0,0]);
-buildInputRow('fwd-alloc', 'fwd-alloc', '升級配點分配', [0,0,0,0,0]);
+buildStrategyRow('fwd-strat', 'fwd');
+buildInputRow('fwd-alloc', 'fwd-alloc', '升級配點分配<span class="row-hint" id="fwd-alloc-hint"></span>', [0,0,0,0,0]);
 buildInputRow('fwd-rand', 'fwd-rand', '已知隨機檔<span class="row-hint">留空＝平均值 2×倍率</span>', ['','','','','']);
 buildInputRow('rev-top', 'rev-top', '手動輸入檔次<span class="row-hint">直接填五圍檔位</span>', [0,0,0,0,0]);
 buildInputRow('rev-drop', 'rev-drop', '掉檔<span class="row-hint">0~4</span>', [0,0,0,0,0]);
@@ -568,23 +582,68 @@ function readFiveRaw(prefix) {
   });
 }
 
-function renderForward() {
+// ---------- 配點策略 ----------
+let fwdAuto = false;   // 值是策略自動填的、還沒被手動改過
+
+function readForwardState() {
   const mode = getMode('fwd');
   const petName = document.getElementById('fwd-pet').value.trim();
-  const manualTop = readFive('fwd-top', 0);
-  const tops = getTops(mode, petName, manualTop);
+  return {
+    mode, petName,
+    tops: getTops(mode, petName, readFive('fwd-top', 0)),
+    drops: readFive('fwd-drop', 0),
+    alloc: readFive('fwd-alloc', 0),
+    mult: num(document.getElementById('fwd-mult').value, 0.2),
+    lv: num(document.getElementById('fwd-lv').value, 145),
+    rand: readFiveRaw('fwd-rand').map(v => v === '' ? null : parseFloat(v))
+  };
+}
+
+function getStrategy() {
+  const el = document.querySelector('input[name="fwd-strat"]:checked');
+  return el ? el.value : 'mix';
+}
+
+function setAllocLock(locked) {
+  LABELS.forEach((_, i) => { document.getElementById(`fwd-alloc-${i}`).readOnly = locked; });
+}
+
+// 先照總點數配滿，爆掉的部分交給 renderForward 最後回滾
+function refillAlloc() {
+  const s = getStrategy();
+  fwdAuto = (s !== 'mix');
+  if (!fwdAuto) return;
+  const P = Math.max(0, num(document.getElementById('fwd-lv').value, 145) - 1);
+  LABELS.forEach((_, i) => { document.getElementById(`fwd-alloc-${i}`).value = (i === +s) ? P : 0; });
+}
+
+function renderForward() {
+  const st = readForwardState();
+  const { mode, petName, tops, drops, lv } = st;
   showPetWarn('fwd', mode, petName);
-  const drops = readFive('fwd-drop', 0);
-  const alloc = readFive('fwd-alloc', 0);
-  const mult = num(document.getElementById('fwd-mult').value, 0.2);
-  const lv = num(document.getElementById('fwd-lv').value, 145);
-  const randRaw = readFiveRaw('fwd-rand').map(v => v === '' ? null : parseFloat(v));
 
-  const r = computeForward({ tops, drops, mult, lv, alloc, rand: randRaw });
+  let r = computeForward(st);
 
-  const banner = document.getElementById('fwd-burst-banner');
-  banner.textContent = r.burstMsg;
-  banner.className = 'banner ' + (r.burstOk ? 'ok' : 'warn');
+  // 回滾：所有判定跑完之後，把配不進去的點從輸入格退掉，後面畫面一律用退過的值
+  const rolled = r.eff.map(v => Math.max(0, v));
+  if (rolled.some((v, i) => v !== st.alloc[i])) {
+    rolled.forEach((v, i) => { document.getElementById(`fwd-alloc-${i}`).value = v; });
+    st.alloc = rolled;
+    r = computeForward(st);
+  }
+  const alloc = st.alloc;
+
+  // 回滾之後填的值就是吃得進去的值，剩餘為正＝還沒配完（含被退回來的），為負＝五項合計超過總點數
+  const P = Math.max(0, lv - 1);
+  const rest = P - alloc.reduce((a, b) => a + b, 0);
+  const over = -rest;
+  setAllocLock(fwdAuto && rest === 0);
+
+  const hint = document.getElementById('fwd-alloc-hint');
+  hint.textContent = over > 0 ? `可配 ${P} 點・超出 ${over} 點`
+                   : rest > 0 ? `可配 ${P} 點・剩餘 ${rest} 點`
+                              : `可配 ${P} 點・已配完`;
+  hint.classList.toggle('neg', over > 0 || rest > 0);
 
   const cells = vals => vals.map(v => `<td>${v}</td>`).join('');
 
@@ -803,9 +862,14 @@ document.getElementById('rec-clear').addEventListener('click', (e) => {
 });
 
 // ---------- 事件綁定 ----------
+// 手動改過就脫離自動模式，不再自動鎖回唯讀；要回自動值就重點一次策略
+LABELS.forEach((_, i) => document.getElementById(`fwd-alloc-${i}`).addEventListener('input', () => { fwdAuto = false; }));
 document.querySelectorAll('#panel-forward input').forEach(el => el.addEventListener('input', renderForward));
 document.querySelectorAll('#panel-forward select').forEach(el => el.addEventListener('change', renderForward));
 document.querySelectorAll('input[name="fwd-mode"]').forEach(el => el.addEventListener('change', () => { applyMode('fwd'); renderForward(); }));
+// 用 click 不用 change：手動改過之後再點一次同一個策略要能重填
+document.querySelectorAll('input[name="fwd-strat"]').forEach(el => el.addEventListener('click', () => { refillAlloc(); renderForward(); }));
+document.getElementById('fwd-lv').addEventListener('input', () => { if (getStrategy() !== 'mix') { refillAlloc(); renderForward(); } });
 document.querySelectorAll('input[name="rev-mode"]').forEach(el => el.addEventListener('change', () => { applyMode('rev'); renderReverse(); }));
 document.querySelectorAll('#panel-reverse input').forEach(el => el.addEventListener('input', renderReverse));
 document.querySelectorAll('#panel-reverse select').forEach(el => el.addEventListener('change', renderReverse));
