@@ -487,18 +487,7 @@ function computeForward(state) {
     for (let i = 0; i < 5; i++) v += coeffs[i] * finalBP[i];
     stats[name] = Math.floor(v);
   }
-  const totalLeftover = leftover.reduce((a, b) => a + b, 0);
-  let burstMsg, burstOk;
-  if (totalLeftover === 0) {
-    burstOk = true;
-    burstMsg = `未爆點：${P} 點全部配得進去`;
-  } else {
-    burstOk = false;
-    const labels = ['體', '力', '強', '速', '魔'];
-    const maxIdx = alloc.indexOf(Math.max(...alloc));
-    burstMsg = `爆點：主加點 ${labels[maxIdx]} 有 ${totalLeftover} 點配不進去，需改配其他屬性`;
-  }
-  return { fixed, growth, rnd, nat, cap, eff, leftover, panelBP, finalBP, stats, burstMsg, burstOk };
+  return { fixed, growth, rnd, nat, cap, eff, leftover, panelBP, finalBP, stats };
 }
 
 // 對應說明文件 §7、§14.2：推算（算隨機檔）
