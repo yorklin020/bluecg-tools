@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>帳號分組批次移動</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* 明亮（預設）—— 與工具集共用同一組色票 */
+  :root{
+    --bg:#f4f0f9;
+    --panel:#ffffff;
+    --panel-2:#f2edf9;
+    --line:#dcd2ea;
+    --text:#2a2140;
+    --muted:#6a5f85;
+    --gold:#8f6510;
+    --gold-hover:#7a550a;
+    --on-gold:#ffffff;
+    --teal:#1c7a4a;
+    --teal-bg:#e6f4ec;
+    --coral:#b0322f;
+    --coral-bg:#fdeceb;
+    --shadow:0 1px 2px rgba(42,33,64,.07);
+    --mono:'JetBrains Mono', monospace;
+  }
+  :root[data-app-theme="dark"]{
+    --bg:#211a2e;
+    --panel:#2b2240;
+    --panel-2:#332950;
+    --line:#473a63;
+    --text:#f1ecf7;
+    --muted:#a99dc4;
+    --gold:#e0b74c;
+    --gold-hover:#eec765;
+    --on-gold:#211a2e;
+    --teal:#6fcf97;
+    --teal-bg:#243a30;
+    --coral:#f0918e;
+    --coral-bg:#3d2730;
+    --shadow:none;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans TC', system-ui, sans-serif;
+    line-height:1.65;
+    padding:20px 14px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  header h1{
+    font-family:'Noto Serif TC', serif;
+    font-size:1.6rem;margin:0 0 4px;
+    color:var(--gold);letter-spacing:.02em;
+  }
+  header p{margin:0;color:var(--muted);font-size:.88rem;}
+  .back-link{
+    display:inline-block;margin-bottom:6px;
+    color:var(--muted);text-decoration:none;font-size:.8rem;
+  }
+  .back-link:hover{color:var(--gold);}
+  .btn{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    font-family:'Noto Sans TC',sans-serif;font-size:.85rem;
+    border-radius:6px;padding:7px 12px;cursor:pointer;
+  }
+  .btn:hover{border-color:var(--gold);color:var(--gold);}
+  .btn.primary{
+    background:var(--gold);border-color:var(--gold);color:var(--on-gold);
+    font-weight:700;font-size:.95rem;padding:10px 22px;
+  }
+  .btn.primary:hover{background:var(--gold-hover);border-color:var(--gold-hover);color:var(--on-gold);}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    padding:18px 18px 20px;
+    margin-bottom:18px;
+  }
+  .card h2{
+    font-size:.95rem;margin:0 0 12px;color:var(--gold);
+    font-weight:700;letter-spacing:.02em;
+    display:flex;align-items:center;gap:9px;
+  }
+  .step-no{
+    flex:none;display:inline-grid;place-items:center;
+    width:22px;height:22px;border-radius:50%;
+    background:var(--gold);color:var(--on-gold);
+    font-family:var(--mono);font-size:.76rem;font-weight:600;
+  }
+  .card p{margin:0 0 10px;font-size:.9rem;}
+  .card p:last-child{margin-bottom:0;}
+  ol,ul{margin:0 0 10px;padding-left:1.4em;font-size:.9rem;}
+  li{margin-bottom:5px;}
+  code{
+    background:var(--panel-2);padding:1px 5px;border-radius:4px;
+    font-family:var(--mono);font-size:.86em;
+  }
+  kbd{
+    background:var(--panel-2);border:1px solid var(--line);
+    border-bottom-width:2px;border-radius:4px;
+    padding:0 5px;font-family:var(--mono);font-size:.8em;
+  }
+  .code-box{position:relative;margin:0 0 12px;}
+  .code-box pre{
+    margin:0;padding:13px 15px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+    overflow:auto;max-height:420px;
+    font-family:var(--mono);font-size:.8rem;line-height:1.55;
+    white-space:pre;
+  }
+  .code-box.wrap-code pre{white-space:pre-wrap;word-break:break-all;}
+  .copy-btn{
+    position:absolute;top:8px;right:8px;
+    background:var(--panel);border:1px solid var(--line);color:var(--muted);
+    font-family:'Noto Sans TC',sans-serif;font-size:.74rem;
+    border-radius:5px;padding:3px 9px;cursor:pointer;
+  }
+  .copy-btn:hover{border-color:var(--gold);color:var(--gold);}
+  .copy-btn.done{color:var(--teal);border-color:var(--teal);}
+  /* 七格貼上區 */
+  .zu-boxes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:14px;}
+  .zu-box{
+    background:var(--panel-2);border:1px solid var(--line);
+    border-radius:8px;padding:10px 11px 11px;
+    display:flex;flex-direction:column;
+  }
+  .zu-box.filled{border-color:var(--gold);}
+  .zu-head{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+  .zu-code{
+    flex:none;display:inline-grid;place-items:center;
+    width:20px;height:20px;border-radius:4px;
+    background:var(--gold);color:var(--on-gold);
+    font-family:var(--mono);font-size:.74rem;font-weight:600;
+  }
+  .zu-name{font-size:.86rem;font-weight:700;}
+  .zu-count{margin-left:auto;font-family:var(--mono);font-size:.74rem;color:var(--muted);}
+  .zu-box textarea{
+    width:100%;resize:vertical;min-height:104px;
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;padding:7px 9px;
+    font-family:var(--mono);font-size:.78rem;line-height:1.5;
+  }
+  .zu-box textarea:focus{outline:none;border-color:var(--gold);}
+  .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .summary{font-size:.85rem;color:var(--muted);}
+  .summary b{color:var(--text);font-family:var(--mono);}
+  /* 產出結果 */
+  #result{display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--line);}
+  #result.show{display:block;}
+  .result-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .dl-btn{
+    display:inline-block;text-decoration:none;cursor:pointer;
+    background:var(--gold);color:var(--on-gold);
+    border:1px solid var(--gold);border-radius:6px;
+    padding:8px 16px;font-size:.88rem;font-weight:700;
+  }
+  .dl-btn:hover{background:var(--gold-hover);border-color:var(--gold-hover);}
+  .msg{
+    border-radius:6px;padding:9px 12px;margin-bottom:10px;
+    font-size:.84rem;border:1px solid;
+  }
+  .msg.warn{background:var(--coral-bg);border-color:var(--coral);color:var(--coral);}
+  .msg.ok{background:var(--teal-bg);border-color:var(--teal);color:var(--teal);}
+  .msg ul{margin:6px 0 0;font-size:.82rem;}
+  /* 目錄代號說明 */
+  .zu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin-bottom:12px;}
+  .zu{
+    background:var(--panel-2);border:1px solid var(--line);
+    border-radius:7px;padding:8px 10px;
+    display:flex;align-items:baseline;gap:8px;
+  }
+  .zu b{font-family:var(--mono);color:var(--gold);font-size:.95rem;}
+  .zu span{font-size:.84rem;}
+  .note{
+    background:var(--panel-2);border:1px solid var(--line);
+    border-left:3px solid var(--gold);
+    border-radius:6px;padding:10px 13px;margin:0 0 12px;
+    font-size:.85rem;color:var(--muted);
+  }
+  .note:last-child{margin-bottom:0;}
+  .note b{color:var(--text);}
+  details.manual{margin-top:4px;}
+  details.manual > summary{
+    cursor:pointer;font-size:.88rem;color:var(--gold);font-weight:700;
+    padding:4px 0;list-style-position:inside;
+  }
+  details.manual > summary:hover{color:var(--gold-hover);}
+  details.manual > div{padding-top:12px;}
+  .mark-ok{color:var(--teal);font-weight:700;margin-right:6px;}
+  .mark-un{color:var(--coral);font-weight:700;margin-right:6px;}
+  .check li{margin-bottom:8px;}
+  footer{margin-top:26px;color:var(--muted);font-size:.78rem;text-align:center;}
+</style>
+<script>
+  // 在繪製前套用主題，避免閃一下白底；與各工具共用同一個 key
+  (function(){
+    var t = 'light';
+    try { t = localStorage.getItem('moli-calc-theme') || 'light'; } catch (e) {}
+    document.documentElement.setAttribute('data-app-theme', t);
+  })();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <div>
+      <a class="back-link" href="../">← 回工具集</a>
+      <h1>帳號分組批次移動</h1>
+      <p>把帳號貼進對應的目錄，產生一份可以直接跑的腳本，整批調整 bluecg.net 的帳號分組與排序</p>
+    </div>
+    <button type="button" class="btn" id="theme-toggle">切換暗色</button>
+  </header>
+
+  <div class="card">
+    <h2>這在解決什麼</h2>
+    <p>帳號多的時候，要把幾十個帳號搬到「倉庫」或「棄置」，得一個一個點開選單再選分組，整組搬完手會廢掉。</p>
+    <p>原理是：<b>移動一個帳號＝開一個網址</b>，所以把網址列出來交給腳本連續開完就好。</p>
+    <div class="code-box wrap-code">
+      <button type="button" class="copy-btn">複製</button>
+      <pre><code>https://www.bluecg.net/plugin.php?id=gift:array&amp;ID=&lt;帳號&gt;&amp;zu=&lt;目錄代號&gt;</code></pre>
+    </div>
+    <div class="zu-grid">
+      <div class="zu"><b>0</b><span>置頂</span></div>
+      <div class="zu"><b>1</b><span>戰鬥</span></div>
+      <div class="zu"><b>2</b><span>生產</span></div>
+      <div class="zu"><b>3</b><span>倉庫</span></div>
+      <div class="zu"><b>4</b><span>販賣</span></div>
+      <div class="zu"><b>5</b><span>普通</span></div>
+      <div class="zu"><b>6</b><span>棄置</span></div>
+    </div>
+    <div class="note"><b>前提：</b>動手前先在 Chrome 打帳號密碼登入 bluecg.net，並勾「記住登入」。沒登入的話，腳本開過去的每個網址都只會是登入頁，整批白跑而且看不出來。</div>
+    <p>全程走你自己登入的 Chrome，這頁只負責產生文字，不會連到 bluecg.net，也收不到你的帳號資料。需要的東西：Windows、Chrome，不用裝額外軟體。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-no">1</span>抓出現有的帳號清單</h2>
+    <p>不用一個一個打字。在<b>已登入的帳號管理頁</b>按 <kbd>F12</kbd> 開開發者工具，切到 <b>Console</b> 分頁，貼上這行按 <kbd>Enter</kbd>，目前的分組與帳號就進剪貼簿了：</p>
+    <div class="code-box wrap-code">
+      <button type="button" class="copy-btn">複製</button>
+      <pre><code>copy([...document.querySelectorAll('ul[id^="category_"]')].map(ul=>{const zu=ul.id.slice(9);const a=[...ul.querySelectorAll('a.zhanghao-link')].map(x=>new URL(x.href).searchParams.get('ID'));const g=ul.querySelector('a[id$="帳號"]');return a.length?`# 分組 ${zu} ${g?g.id.split('_').pop():''}（${a.length}）\n`+a.join('\n'):''}).filter(Boolean).join('\n\n'))</code></pre>
+    </div>
+    <ul>
+      <li>第一次貼會被 Chrome 擋住，畫面會要你先手動打 <code>allow pasting</code> 按 Enter，打完就能貼了。</li>
+      <li>執行後只回一行 <code>undefined</code> 是<b>正常的</b>，<code>copy()</code> 本來就不回傳值，清單已經在剪貼簿裡。</li>
+      <li>只印出一組的話，就是網頁只把展開的那組放進畫面，切到其他分組再各跑一次。</li>
+    </ul>
+    <p>這步只是方便你知道自己有哪些帳號。已經有清單的話可以直接跳到步驟 2。</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-no">2</span>貼進要搬去的目錄</h2>
+    <p>一格一個目錄，貼上<b>你想搬到那一格的帳號</b>，一行一個。<code>#</code> 開頭的行會自動跳過，所以上一步複製的標題行留著沒關係。不用動的目錄留空就好。</p>
+
+    <div class="zu-boxes" id="zu-boxes"></div>
+
+    <div class="actions">
+      <button type="button" class="btn primary" id="gen-btn">產出腳本</button>
+      <button type="button" class="btn" id="clear-btn">全部清空</button>
+      <span class="summary" id="summary">尚未輸入</span>
+    </div>
+
+    <div id="result">
+      <div id="messages"></div>
+      <div class="result-bar">
+        <button type="button" class="dl-btn" id="dl-ps1">下載 move-accounts.ps1</button>
+        <button type="button" class="btn" id="dl-bat">下載 move-accounts.bat</button>
+        <span class="summary" id="result-summary"></span>
+      </div>
+      <div class="code-box">
+        <button type="button" class="copy-btn">複製</button>
+        <pre><code id="ps1-out"></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-no">3</span>執行</h2>
+    <p>兩個檔案<b>放在同一個資料夾</b>，然後點 <code>move-accounts.bat</code>。ps1 不能雙擊執行，bat 只是幫忙用對的參數叫起 PowerShell：</p>
+    <div class="code-box">
+      <button type="button" class="copy-btn">複製</button>
+      <pre><code>@echo off
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0move-accounts.ps1"
+pause</code></pre>
+    </div>
+    <div class="note"><b>每次執行都會停下來一次。</b>腳本會用一個獨立設定檔另外開 Chrome（不會動到你平常那個），在裡面打開 bluecg.net 然後等你確認是登入狀態。要<b>手動打 <code>yes</code></b> 才會開始搬，直接按 Enter 會中止——這是故意的，免得順手按過去。<b>沒登入的話整批都會白跑</b>，畫面上每一筆還是會印成功，所以這一下請真的看一眼。</div>
+    <div class="note">下載 <code>.bat</code>、<code>.ps1</code> 時 Chrome 會問「這類檔案可能有害，要保留嗎」，這是它對這兩種副檔名的固定警告。<b>建議用下載</b>而不是自己複製貼上存檔，下載的檔已經寫好 UTF-8 BOM；沒有 BOM 的話 PowerShell 5.1 會把中文訊息讀成亂碼。</div>
+    <div class="note"><b>跳出「無法開啟這些檔案／網際網路安全性設定」的話</b>，是 Windows 對網路下載檔案的封鎖（Mark of the Web），不是防毒。右鍵那個檔 → 內容 → 最下面勾<b>解除封鎖</b> → 確定。從 zip 解壓的要先對 zip 本身解除封鎖再解壓，或整個資料夾跑一次 <code>Get-ChildItem | Unblock-File</code>。</div>
+  </div>
+
+  <div class="card">
+    <h2>手動版：用 accounts.txt</h2>
+    <p>不想把帳號貼在網頁上、或想把清單存成檔案自己管理的話，用這個版本。一次只處理一組，帳號放在旁邊的 <code>accounts.txt</code>，腳本去讀它。</p>
+    <details class="manual">
+      <summary>展開手動版的檔案與說明</summary>
+      <div>
+        <p><a class="dl-btn" href="./move-accounts.zip" download>下載 move-accounts.zip</a></p>
+        <p>zip 裡是 <code>move-accounts.ps1</code>、<code>move-accounts.bat</code> 和一個空的 <code>accounts.txt</code>。也可以照下面的原始碼自己存檔，記得存 UTF-8。</p>
+
+        <p><code>accounts.txt</code> 長這樣，一行一個帳號，<code>#</code> 開頭的行會自動跳過，所以步驟 1 複製的標題行留著沒關係：</p>
+        <div class="code-box">
+          <button type="button" class="copy-btn">複製</button>
+          <pre><code># 分組 5 普通帳號（100）
+Account01
+Account02
+Account03
+
+# 分組 3 倉庫帳號（42）
+Storage01
+Storage02</code></pre>
+        </div>
+        <p><b>只留下這次要移動的帳號，其他整行刪掉</b>，因為這版不分組，整個檔案會一起搬到同一個 <code>$Zu</code>。</p>
+
+        <p><code>move-accounts.ps1</code>，要改的只有最上面的 <code>$Zu</code>：</p>
+        <div class="code-box">
+          <button type="button" class="copy-btn">複製</button>
+          <pre><code># BlueCG 帳號批次移動：開一個分頁、等網頁跑完、關掉，再換下一個
+
+$Zu          = 3                                                           # 0置頂 1戰鬥 2生產 3倉庫 4販賣 5普通 6棄置
+$AccountFile = "$PSScriptRoot\accounts.txt"
+$WaitSec     = 1.5                                                         # 每個分頁停留秒數
+$Port        = 9222
+$UserDir     = "$env:LOCALAPPDATA\bluecg-chrome"
+$ChromeExe   = "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+
+# ---------------- 檢查 ----------------
+if ($Zu -lt 0 -or $Zu -gt 6) { Write-Host "Zu 只能填 0-6，目前是 $Zu"; exit 1 }
+if (-not (Test-Path -LiteralPath $AccountFile)) { Write-Host "找不到帳號檔：$AccountFile"; exit 1 }
+if (-not (Test-Path -LiteralPath $ChromeExe))   { Write-Host "找不到 Chrome：$ChromeExe"; exit 1 }
+
+$accounts = @(Get-Content -LiteralPath $AccountFile -Encoding UTF8 |
+              ForEach-Object { $_.Trim() } |
+              Where-Object { $_ -and -not $_.StartsWith('#') })
+if ($accounts.Count -eq 0) { Write-Host "帳號檔是空的"; exit 1 }
+
+# ---------------- 啟動遙控用的 Chrome ----------------
+$base  = "http://127.0.0.1:$Port"
+$alive = $false
+try { Invoke-RestMethod "$base/json/version" -TimeoutSec 2 | Out-Null; $alive = $true } catch {}
+
+if (-not $alive) {
+  Write-Host "啟動 Chrome（遙控設定檔：$UserDir）"
+  Start-Process -FilePath $ChromeExe -ArgumentList @(
+    "--remote-debugging-port=$Port",
+    "--user-data-dir=$UserDir",
+    '--no-first-run',
+    '--no-default-browser-check',
+    'about:blank')
+  for ($i = 0; $i -lt 40 -and -not $alive; $i++) {
+    Start-Sleep -Milliseconds 500
+    try { Invoke-RestMethod "$base/json/version" -TimeoutSec 2 | Out-Null; $alive = $true } catch {}
+  }
+}
+if (-not $alive) { Write-Host "Chrome 遙控介面沒起來（$base）"; exit 1 }
+
+# 每次都問。設定檔資料夾還在但 cookie 過期時，整批會開成登入頁而且看起來像成功
+Invoke-RestMethod -Method Put -Uri "$base/json/new?$([uri]::EscapeDataString('https://www.bluecg.net/'))" | Out-Null
+$ans = (Read-Host "剛開的分頁是 bluecg.net，確認畫面是已登入狀態了嗎？打 yes 繼續，其他任何輸入都中止").Trim()
+if ($ans -ne 'yes' -and $ans -ne 'y') { Write-Host "已中止，沒有動到任何帳號"; exit 1 }
+
+# ---------------- 逐一移動 ----------------
+Write-Host ""
+Write-Host "移動到目錄 zu=$Zu，共 $($accounts.Count) 個帳號"
+$failed = @()
+$n = 0
+foreach ($acc in $accounts) {
+  $n++
+  $url = "https://www.bluecg.net/plugin.php?id=gift:array&amp;ID=$acc&amp;zu=$Zu"
+  try {
+    $tab = Invoke-RestMethod -Method Put -Uri "$base/json/new?$([uri]::EscapeDataString($url))"
+    Start-Sleep -Milliseconds ([int]($WaitSec * 1000))
+    Invoke-RestMethod "$base/json/close/$($tab.id)" | Out-Null
+    Write-Host ("[{0}/{1}] {2}" -f $n, $accounts.Count, $acc)
+  } catch {
+    $failed += $acc
+    Write-Host ("[{0}/{1}] {2}  失敗：{3}" -f $n, $accounts.Count, $acc, $_.Exception.Message)
+  }
+}
+
+Write-Host ""
+Write-Host "完成 $($accounts.Count - $failed.Count)/$($accounts.Count)"
+if ($failed.Count -gt 0) { Write-Host ("失敗：" + ($failed -join ', ')) }</code></pre>
+        </div>
+        <p>bat 跟上面步驟 3 那個一模一樣，兩版共用。</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>想調同一組裡的順序</h2>
+    <p>同一個目錄裡的排列順序＝<b>送出的順序</b>，先送的排前面，也就是你在格子裡貼的行順序。要在原目錄內重排，不能原地重送，得先整批搬去別組中轉，再照想要的順序搬回來：</p>
+    <ol>
+      <li>把那批帳號貼到一個暫時的目錄（例如 <code>0</code> 置頂），產出、執行</li>
+      <li>回到這頁，把同一批帳號改成你要的行順序，貼回原本那一格</li>
+      <li>再產出、執行一次</li>
+    </ol>
+    <p>兩輪之間等第一輪跑完再做就好，腳本每個帳號之間有 <code>$WaitSec</code> 的間隔。</p>
+  </div>
+
+  <div class="card">
+    <h2>驗證狀態</h2>
+    <p>哪些真的試過、哪些沒有，先講清楚：</p>
+    <ul class="check">
+      <li><span class="mark-ok">已驗證</span>步驟 1 的 Console 那行，拿實際存下來的帳號管理頁 HTML 跑過，100 個帳號全部抓出。</li>
+      <li><span class="mark-un">未驗證</span>帳號管理頁是不是七組都同時在頁面資料裡，目前只確認過其中一組。</li>
+      <li><span class="mark-un">未驗證</span><code>zu</code> 代號與目錄的對應來自論壇分享文，沒有七組逐一實測。第一次用先只填一格、放一個不重要的帳號，確認搬對地方再整批跑。</li>
+      <li><span class="mark-un">未驗證</span>產出的腳本沒有實際跑過完整一輪。</li>
+    </ul>
+    <div class="note">移動會真的改掉帳號的分組狀態，而且沒有還原按鈕。按下去之前先看一眼產出的腳本裡是不是只有你要動的帳號。</div>
+  </div>
+
+  <footer>
+    這頁完全在你的瀏覽器裡跑，沒有任何資料離開這台電腦。
+  </footer>
+
+</div>
+
+<script>
+const THEME_KEY = 'moli-calc-theme';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-app-theme', t);
+  document.getElementById('theme-toggle').textContent = (t === 'dark') ? '切換亮色' : '切換暗色';
+}
+let theme = 'light';
+try { theme = localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { theme = 'light'; }
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  theme = (theme === 'dark') ? 'light' : 'dark';
+  try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* 無法保存時仍可切換 */ }
+  applyTheme(theme);
+});
+applyTheme(theme);
+
+// ===================== 七格輸入 =====================
+
+const ZU = [
+  { code: 0, name: '置頂' },
+  { code: 1, name: '戰鬥' },
+  { code: 2, name: '生產' },
+  { code: 3, name: '倉庫' },
+  { code: 4, name: '販賣' },
+  { code: 5, name: '普通' },
+  { code: 6, name: '棄置' },
+];
+const ACCOUNT_RE = /^[A-Za-z0-9_-]+$/;
+const DRAFT_KEY = 'bluecg-move-draft';
+
+const boxesEl = document.getElementById('zu-boxes');
+boxesEl.innerHTML = ZU.map(z => `
+  <div class="zu-box" data-code="${z.code}">
+    <div class="zu-head">
+      <span class="zu-code">${z.code}</span>
+      <span class="zu-name">${z.name}</span>
+      <span class="zu-count" data-count="${z.code}">0</span>
+    </div>
+    <textarea id="zu-${z.code}" spellcheck="false" placeholder="一行一個帳號"></textarea>
+  </div>`).join('');
+
+// 解析一格：回傳有效帳號與無效行
+function parseBox(code){
+  const raw = document.getElementById('zu-' + code).value;
+  const accounts = [], invalid = [];
+  raw.split(/\r?\n/).forEach(line => {
+    const s = line.trim();
+    if (!s || s.startsWith('#')) return;
+    if (ACCOUNT_RE.test(s)) accounts.push(s); else invalid.push(s);
+  });
+  return { code, accounts, invalid };
+}
+
+function readAll(){ return ZU.map(z => parseBox(z.code)); }
+
+function refresh(){
+  const all = readAll();
+  let total = 0, groups = 0;
+  all.forEach(g => {
+    total += g.accounts.length;
+    if (g.accounts.length) groups++;
+    document.querySelector(`[data-count="${g.code}"]`).textContent = g.accounts.length;
+    document.querySelector(`.zu-box[data-code="${g.code}"]`).classList.toggle('filled', g.accounts.length > 0);
+  });
+  document.getElementById('summary').textContent =
+    total ? `${groups} 組 / 共 ${total} 個帳號` : '尚未輸入';
+  saveDraft();
+}
+
+// 草稿只存在這台瀏覽器，重整不會白打
+function saveDraft(){
+  try {
+    const d = {};
+    ZU.forEach(z => { d[z.code] = document.getElementById('zu-' + z.code).value; });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+  } catch (e) { /* 存不了就算了 */ }
+}
+function loadDraft(){
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+    ZU.forEach(z => { if (d[z.code]) document.getElementById('zu-' + z.code).value = d[z.code]; });
+  } catch (e) { /* 讀不到就空白開始 */ }
+}
+
+boxesEl.addEventListener('input', refresh);
+
+document.getElementById('clear-btn').addEventListener('click', () => {
+  ZU.forEach(z => { document.getElementById('zu-' + z.code).value = ''; });
+  document.getElementById('result').classList.remove('show');
+  refresh();
+});
+
+// ===================== 產出腳本 =====================
+
+function psQuote(s){ return "'" + s.replace(/'/g, "''") + "'"; }
+
+function buildPs1(groups, total){
+  const stamp = new Date().toLocaleString('zh-TW', { hour12: false });
+  const plan = groups.map(g =>
+    `  @{ Zu = ${g.code}; Accounts = @(\n` +
+    g.accounts.map(a => '    ' + psQuote(a)).join('\n') +
+    '\n  )}'
+  ).join('\n');
+
+  return `# BlueCG 帳號批次移動
+# 由〈帳號分組批次移動〉頁面產生：${stamp}
+# ${groups.length} 組 / 共 ${total} 個帳號
+
+$WaitSec   = 1.5                                                           # 每個分頁停留秒數
+$Port      = 9222
+$UserDir   = "$env:LOCALAPPDATA\\bluecg-chrome"
+$ChromeExe = "$env:LOCALAPPDATA\\Google\\Chrome\\Application\\chrome.exe"
+
+# 目錄代號：0置頂 1戰鬥 2生產 3倉庫 4販賣 5普通 6棄置
+# 同一組內的順序＝送出順序，先送的排前面
+$Plan = @(
+${plan}
+)
+
+# ---------------- 檢查 ----------------
+if (-not (Test-Path -LiteralPath $ChromeExe)) { Write-Host "找不到 Chrome：$ChromeExe"; exit 1 }
+
+$total = 0
+foreach ($g in $Plan) { $total += $g.Accounts.Count }
+if ($total -eq 0) { Write-Host "腳本裡沒有帳號"; exit 1 }
+
+# ---------------- 啟動遙控用的 Chrome ----------------
+$base  = "http://127.0.0.1:$Port"
+$alive = $false
+try { Invoke-RestMethod "$base/json/version" -TimeoutSec 2 | Out-Null; $alive = $true } catch {}
+
+if (-not $alive) {
+  Write-Host "啟動 Chrome（遙控設定檔：$UserDir）"
+  Start-Process -FilePath $ChromeExe -ArgumentList @(
+    "--remote-debugging-port=$Port",
+    "--user-data-dir=$UserDir",
+    '--no-first-run',
+    '--no-default-browser-check',
+    'about:blank')
+  for ($i = 0; $i -lt 40 -and -not $alive; $i++) {
+    Start-Sleep -Milliseconds 500
+    try { Invoke-RestMethod "$base/json/version" -TimeoutSec 2 | Out-Null; $alive = $true } catch {}
+  }
+}
+if (-not $alive) { Write-Host "Chrome 遙控介面沒起來（$base）"; exit 1 }
+
+# 每次都問。設定檔資料夾還在但 cookie 過期時，整批會開成登入頁而且看起來像成功
+Invoke-RestMethod -Method Put -Uri "$base/json/new?$([uri]::EscapeDataString('https://www.bluecg.net/'))" | Out-Null
+$ans = (Read-Host "剛開的分頁是 bluecg.net，確認畫面是已登入狀態了嗎？打 yes 繼續，其他任何輸入都中止").Trim()
+if ($ans -ne 'yes' -and $ans -ne 'y') { Write-Host "已中止，沒有動到任何帳號"; exit 1 }
+
+# ---------------- 逐一移動 ----------------
+$failed = @()
+$n = 0
+foreach ($g in $Plan) {
+  Write-Host ""
+  Write-Host "移動到目錄 zu=$($g.Zu)，$($g.Accounts.Count) 個帳號"
+  foreach ($acc in $g.Accounts) {
+    $n++
+    $url = "https://www.bluecg.net/plugin.php?id=gift:array&ID=$acc&zu=$($g.Zu)"
+    try {
+      $tab = Invoke-RestMethod -Method Put -Uri "$base/json/new?$([uri]::EscapeDataString($url))"
+      Start-Sleep -Milliseconds ([int]($WaitSec * 1000))
+      Invoke-RestMethod "$base/json/close/$($tab.id)" | Out-Null
+      Write-Host ("[{0}/{1}] zu={2} {3}" -f $n, $total, $g.Zu, $acc)
+    } catch {
+      $failed += $acc
+      Write-Host ("[{0}/{1}] zu={2} {3}  失敗：{4}" -f $n, $total, $g.Zu, $acc, $_.Exception.Message)
+    }
+  }
+}
+
+Write-Host ""
+Write-Host "完成 $($total - $failed.Count)/$total"
+if ($failed.Count -gt 0) { Write-Host ("失敗：" + ($failed -join ', ')) }
+`;
+}
+
+const BAT_TEXT = `@echo off
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0move-accounts.ps1"
+pause
+`;
+
+function msg(kind, html){
+  return `<div class="msg ${kind}">${html}</div>`;
+}
+
+document.getElementById('gen-btn').addEventListener('click', () => {
+  const all = readAll();
+  const groups = all.filter(g => g.accounts.length > 0);
+  const total = groups.reduce((s, g) => s + g.accounts.length, 0);
+  const box = document.getElementById('messages');
+  const result = document.getElementById('result');
+
+  if (total === 0) {
+    result.classList.add('show');
+    box.innerHTML = msg('warn', '七格都是空的，至少要有一格有帳號。');
+    document.getElementById('ps1-out').textContent = '';
+    document.getElementById('result-summary').textContent = '';
+    return;
+  }
+
+  // 同一個帳號填在兩格會被搬兩次，最後一次才算數
+  const seen = new Map(), dup = [];
+  groups.forEach(g => g.accounts.forEach(a => {
+    if (seen.has(a)) dup.push(a); else seen.set(a, g.code);
+  }));
+  const invalid = all.flatMap(g => g.invalid.map(s => `${g.code}：${s}`));
+
+  let notes = '';
+  if (invalid.length) {
+    notes += msg('warn', '下面這些行看起來不像帳號，已經跳過（帳號只接受英數字、<code>-</code>、<code>_</code>）：<ul>' +
+      invalid.slice(0, 12).map(s => `<li><code>${s.replace(/</g, '&lt;')}</code></li>`).join('') +
+      (invalid.length > 12 ? `<li>…另外 ${invalid.length - 12} 行</li>` : '') + '</ul>');
+  }
+  if (dup.length) {
+    notes += msg('warn', '這些帳號填在不只一格，會被搬兩次、以最後一次為準：<code>' +
+      [...new Set(dup)].join('</code>、<code>') + '</code>');
+  }
+  notes += msg('ok', `已產出 ${groups.length} 組、共 ${total} 個帳號的腳本。`);
+  box.innerHTML = notes;
+
+  document.getElementById('ps1-out').textContent = buildPs1(groups, total);
+  document.getElementById('result-summary').textContent = '兩個檔放同一個資料夾，點 bat 執行';
+  result.classList.add('show');
+  result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+// PowerShell 5.1 讀沒有 BOM 的 ps1 會當成 ANSI，中文訊息會變亂碼
+function download(name, text){
+  const blob = new Blob(['﻿' + text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+document.getElementById('dl-ps1').addEventListener('click', () => {
+  const t = document.getElementById('ps1-out').textContent;
+  if (t) download('move-accounts.ps1', t);
+});
+document.getElementById('dl-bat').addEventListener('click', () => download('move-accounts.bat', BAT_TEXT));
+
+// ===================== 複製鈕 =====================
+
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const text = btn.parentElement.querySelector('code').textContent;
+    if (!text) return;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      document.body.removeChild(ta);
+    }
+    btn.textContent = ok ? '已複製' : '複製失敗';
+    btn.classList.toggle('done', ok);
+    setTimeout(() => { btn.textContent = '複製'; btn.classList.remove('done'); }, 1600);
+  });
+});
+
+loadDraft();
+refresh();
+</script>
+
+</body>
+</html>

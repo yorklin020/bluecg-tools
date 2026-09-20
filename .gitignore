@@ -6,3 +6,6 @@
 *.xlsx
 *.zip
 bak/
+
+# 教學頁要給人下載的腳本壓縮檔，不受上面 *.zip 影響
+!account-move/move-accounts.zip
