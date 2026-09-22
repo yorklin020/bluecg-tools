@@ -197,6 +197,7 @@
   #rec-table td:nth-child(2){color:var(--text);}
   #rec-table .empty{color:var(--muted);text-align:left;font-family:'Noto Sans TC',sans-serif;}
   #rec-table th:first-child, #rec-table td:first-child{width:32px;padding-left:4px;padding-right:4px;}
+  #rec-table .row-hint{display:block;font-size:.68rem;color:var(--muted);margin-top:2px;font-weight:400;}
   .rec-del{
     background:transparent;border:1px solid transparent;color:var(--muted);
     font-size:.9rem;line-height:1;width:24px;height:24px;border-radius:6px;cursor:pointer;
@@ -663,6 +664,7 @@ function renderForward() {
     pet: mode === 'manual' ? `（手動 ${tops.join('/')}）` : (petName || '—'),
     dan: drops.join(''),
     lv: lv,
+    alloc: alloc.slice(),
     stats: r.stats,
     bp: r.finalBP
   };
@@ -738,6 +740,11 @@ const REC_KEY = 'moli-calc-records-v1';
 const STAT_ORDER = ['生命', '魔力', '攻擊', '防禦', '敏捷', '精神', '回復'];
 let records = [];
 
+function allocHint(alloc) {
+  if (!alloc) return '';
+  return LABELS.map((l, i) => alloc[i] > 0 ? `${l}${alloc[i]}` : null).filter(Boolean).join('／');
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -766,7 +773,7 @@ function renderRecords() {
   }
   tbody.innerHTML = records.map((rec, i) => `<tr>
     <td><button type="button" class="rec-del" data-idx="${i}" title="刪除這筆" aria-label="刪除這筆紀錄">✕</button></td>
-    <td>${escapeHtml(rec.pet)}</td>
+    <td>${escapeHtml(rec.pet)}${rec.alloc ? `<span class="row-hint">${allocHint(rec.alloc)}</span>` : ''}</td>
     <td>${escapeHtml(rec.dan)}</td>
     <td>${rec.lv}</td>
     ${STAT_ORDER.map(k => `<td>${rec.stats[k]}</td>`).join('')}
