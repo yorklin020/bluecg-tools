@@ -80,6 +80,7 @@ function renderForward() {
     dan: drops.join(''),
     lv: lv,
     alloc: alloc.slice(),
+    rand: st.rand.slice(),
     stats: r.stats,
     bp: r.finalBP
   };
@@ -93,6 +94,12 @@ let records = [];
 function allocHint(alloc) {
   if (!alloc) return '';
   return LABELS.map((l, i) => alloc[i] > 0 ? `${l}${alloc[i]}` : null).filter(Boolean).join('／');
+}
+
+// 沒填的項目用「–」，代表那一項套平均值
+function randHint(rand) {
+  if (!rand || rand.every(v => v === null)) return '';
+  return '隨機檔 ' + rand.map(v => v === null ? '–' : +v.toFixed(2)).join('/');
 }
 
 function escapeHtml(s) {
@@ -124,7 +131,7 @@ function renderRecords() {
   tbody.innerHTML = records.map((rec, i) => `<tr>
     <td><button type="button" class="rec-del" data-idx="${i}" title="刪除這筆" aria-label="刪除這筆紀錄">✕</button></td>
     <td>${escapeHtml(rec.pet)}${rec.alloc ? `<span class="row-hint">${allocHint(rec.alloc)}</span>` : ''}</td>
-    <td>${escapeHtml(rec.dan)}</td>
+    <td>${escapeHtml(rec.dan)}${randHint(rec.rand) ? `<span class="row-hint">${randHint(rec.rand)}</span>` : ''}</td>
     <td>${rec.lv}</td>
     ${STAT_ORDER.map(k => `<td>${rec.stats[k]}</td>`).join('')}
     ${rec.bp.map(v => `<td>${Number(v).toFixed(2)}</td>`).join('')}
