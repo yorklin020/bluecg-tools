@@ -97,9 +97,14 @@ function allocHint(alloc) {
 }
 
 // 沒填的項目用「–」，代表那一項套平均值
-function randHint(rand) {
+function randText(rand) {
   if (!rand || rand.every(v => v === null)) return '';
-  return '隨機檔 ' + rand.map(v => v === null ? '–' : +v.toFixed(2)).join('/');
+  return rand.map(v => v === null ? '–' : +v.toFixed(2)).join('/');
+}
+
+function randHint(rand) {
+  const t = randText(rand);
+  return t ? '隨機檔 ' + t : '';
 }
 
 function escapeHtml(s) {
@@ -150,9 +155,9 @@ document.querySelector('#rec-table tbody').addEventListener('click', (e) => {
 });
 
 function recordsToTsv() {
-  const head = ['寵物', '檔次', 'Lv'].concat(STAT_ORDER).concat(LABELS);
+  const head = ['寵物', '配點', '檔次', '隨機檔', 'Lv'].concat(STAT_ORDER).concat(LABELS);
   const rows = records.map(rec =>
-    [rec.pet, rec.dan, rec.lv]
+    [rec.pet, allocHint(rec.alloc), rec.dan, randText(rec.rand), rec.lv]
       .concat(STAT_ORDER.map(k => rec.stats[k]))
       .concat(rec.bp.map(v => Number(v).toFixed(2)))
   );
