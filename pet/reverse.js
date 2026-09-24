@@ -5,19 +5,26 @@ buildInputRow('rev-drop', 'rev-drop', '掉檔<span class="row-hint">0~4</span>',
 buildInputRow('rev-alloc', 'rev-alloc', '配點', [0,0,0,0,0]);
 buildInputRow('rev-measured', 'rev-measured', '論壇寵物實際BP<span class="row-hint">含小數</span>', ['','','','','' ], '0.01');
 
-function renderReverse() {
+function readReverseState() {
   const mode = getMode('rev');
   const petName = document.getElementById('rev-pet').value.trim();
-  const manualTop = readFive('rev-top', 0);
-  const tops = getTops(mode, petName, manualTop);
-  showPetWarn('rev', mode, petName);
-  const drops = readFive('rev-drop', 0);
-  const alloc = readFive('rev-alloc', 0);
-  const mult = num(document.getElementById('rev-mult').value, 0.2);
-  const lv = num(document.getElementById('rev-lv').value, 145);
-  const measured = readFive('rev-measured', 0);
+  return {
+    mode, petName,
+    tops: getTops(mode, petName, readFive('rev-top', 0)),
+    drops: readFive('rev-drop', 0),
+    alloc: readFive('rev-alloc', 0),
+    mult: num(document.getElementById('rev-mult').value, 0.2),
+    lv: num(document.getElementById('rev-lv').value, 145),
+    measured: readFive('rev-measured', 0)
+  };
+}
 
-  const r = computeReverse({ tops, drops, mult, lv, alloc, measured });
+function renderReverse() {
+  const st = readReverseState();
+  const { mode, petName, tops } = st;
+  showPetWarn('rev', mode, petName);
+
+  const r = computeReverse(st);
 
   const banner = document.getElementById('rev-banner');
   const sumTxt = `五項反推隨機檔合計：${r.sum.toFixed(2)}（應接近 10）`;
@@ -51,6 +58,28 @@ function renderReverse() {
   ).join('');
 }
 
+// 反推出的隨機檔填進正算的「已知隨機檔」，正算就會算回實測BP
+function carryReverseToForward() {
+  const st = readReverseState();
+  const r = computeReverse(st);
+  document.querySelector(`input[name="fwd-mode"][value="${st.mode}"]`).checked = true;
+  document.getElementById('fwd-pet').value = document.getElementById('rev-pet').value;
+  document.getElementById('fwd-mult').value = document.getElementById('rev-mult').value;
+  document.getElementById('fwd-lv').value = document.getElementById('rev-lv').value;
+  LABELS.forEach((_, i) => {
+    document.getElementById(`fwd-top-${i}`).value = document.getElementById(`rev-top-${i}`).value;
+    document.getElementById(`fwd-drop-${i}`).value = st.drops[i];
+    document.getElementById(`fwd-alloc-${i}`).value = st.alloc[i];
+    document.getElementById(`fwd-rand-${i}`).value = +r.inferred[i].toFixed(4);
+  });
+  document.querySelector('input[name="fwd-strat"][value="mix"]').checked = true;
+  autoAlloc.fwd = false;
+  applyMode('fwd');
+  document.querySelector('[data-tab=forward]').click();
+  renderForward();
+}
+
+document.getElementById('rev-to-fwd').addEventListener('click', carryReverseToForward);
 document.querySelectorAll('input[name="rev-mode"]').forEach(el => el.addEventListener('change', () => { applyMode('rev'); renderReverse(); }));
 document.querySelectorAll('#panel-reverse input').forEach(el => el.addEventListener('input', renderReverse));
 document.querySelectorAll('#panel-reverse select').forEach(el => el.addEventListener('change', renderReverse));

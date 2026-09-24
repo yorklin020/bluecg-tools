@@ -176,6 +176,7 @@ th{color:var(--muted);font-weight:500;font-size:.74rem;}
 }
 .btn:hover{border-color:var(--gold-dim);}
 .btn:focus-visible{outline:2px solid var(--gold);outline-offset:1px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;border-color:var(--line);}
 .btn.primary{background:var(--gold);border-color:var(--gold);color:var(--on-gold);font-weight:700;}
 .btn.primary:hover{background:var(--gold-hover);border-color:var(--gold-hover);}
 .btn.danger{color:var(--coral);}

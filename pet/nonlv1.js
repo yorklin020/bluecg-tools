@@ -134,6 +134,7 @@ function renderInitial() {
               : lv < startLv ? '現在等級不能低於起始等級'
               : rest < 0 ? `已配點合計超過 ${P} 點（現在−起始）`
               : '';
+  document.getElementById('ini-to-up').disabled = !!block;
   if (block) {
     banner.hidden = false;
     banner.textContent = block;
@@ -183,6 +184,27 @@ document.querySelectorAll('input[name="nl1-dir"]').forEach(el => el.addEventList
   document.getElementById('nl1-view-up').hidden = down;
   document.getElementById('nl1-view-down').hidden = !down;
 }));
+
+// 起始BP帶到往上推，目標等級與配點沿用現在等級與已配點，按下去會算回現在的BP
+function carryInitialToUp() {
+  const st = readInitialState();
+  const r = computeInitial(st);
+  const s = getStrategy('ini');
+  document.getElementById('nl1-pet').value = document.getElementById('ini-pet').value;
+  document.getElementById('nl1-start').value = document.getElementById('ini-start').value;
+  document.getElementById('nl1-lv').value = document.getElementById('ini-lv').value;
+  LABELS.forEach((_, i) => {
+    document.getElementById(`nl1-drop-${i}`).value = st.drops[i];
+    document.getElementById(`nl1-now-${i}`).value = +r.initBP[i].toFixed(4);
+    document.getElementById(`nl1-alloc-${i}`).value = st.alloc[i];
+  });
+  document.querySelector(`input[name="nl1-strat"][value="${s}"]`).checked = true;
+  autoAlloc.nl1 = autoAlloc.ini;
+  document.querySelector('input[name="nl1-dir"][value="up"]').click();
+  renderNonlv1();
+}
+
+document.getElementById('ini-to-up').addEventListener('click', carryInitialToUp);
 
 renderNonlv1();
 renderInitial();
