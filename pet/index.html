@@ -238,7 +238,7 @@
     <div>
       <a class="back-link" href="../">← 回工具集</a>
       <h1>魔力寶貝算檔器</h1>
-      <p>版本 2026-09-19・資料同步日期 2026-09-07・寵物資料庫 2570 筆・公式對應〈魔力寶貝算檔說明〉v2026-09-07</p>
+      <p>版本 2026-09-24・資料同步日期 2026-09-07・寵物資料庫 2570 筆・公式對應〈魔力寶貝算檔說明〉v2026-09-07</p>
     </div>
     <button type="button" class="btn" id="theme-toggle">切換暗色</button>
   </header>
@@ -246,6 +246,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="forward">正算</button>
     <button class="tab-btn" data-tab="reverse">推算（算隨機檔）</button>
+    <button class="tab-btn" data-tab="nonlv1">非1級寵計算</button>
   </div>
 
   <!-- ============ 正算 ============ -->
@@ -417,6 +418,82 @@
       </div>
     </div>
   </div>
+
+  <!-- ============ 非1級寵計算 ============ -->
+  <div class="panel" id="panel-nonlv1">
+    <div class="two-col">
+      <div class="col-left">
+      <div class="card">
+        <h2>輸入</h2>
+        <div class="row-top">
+          <div class="field" id="nl1-pet-field">
+            <label>選擇寵物（可打字搜尋）</label>
+            <input list="pet-list-nl1" id="nl1-pet" placeholder="輸入寵物名稱…">
+            <datalist id="pet-list-nl1"></datalist>
+            <span class="field-warn" id="nl1-pet-warn"></span>
+          </div>
+          <div class="field" style="max-width:120px;">
+            <label>倍率</label>
+            <select id="nl1-mult">
+              <option value="0.2" selected>0.2</option>
+              <option value="0.25">0.25</option>
+              <option value="0.3">0.3</option>
+              <option value="0.5">0.5</option>
+              <option value="0.6">0.6</option>
+              <option value="0.7">0.7</option>
+            </select>
+          </div>
+          <div class="field" style="max-width:100px;">
+            <label>起始等級</label>
+            <input type="number" id="nl1-start" value="1">
+          </div>
+          <div class="field" style="max-width:100px;">
+            <label>目標等級</label>
+            <input type="number" id="nl1-lv" value="145">
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="stat-table">
+            <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
+            <tbody>
+              <tr id="nl1-drop"></tr>
+              <tr id="nl1-now"></tr>
+              <tr id="nl1-strat" class="strat-row"></tr>
+              <tr id="nl1-alloc"></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </div>
+      <div class="col-right">
+      <div class="card">
+        <h2>五圍 BP（目標等級）</h2>
+        <div class="table-scroll">
+          <table class="stat-table">
+            <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
+            <tbody id="nl1-result"></tbody>
+          </table>
+        </div>
+        <details class="sub">
+          <summary>完整明細（頂檔／固定檔／成長／上限／配點）</summary>
+          <div class="table-scroll">
+            <table class="stat-table">
+              <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
+              <tbody id="nl1-detail"></tbody>
+            </table>
+          </div>
+        </details>
+        <p class="hint">配點以「目標等級－起始等級」計算可配點數，不含隨機檔；野生寵通常從遇到當下的等級才開始算配點，不是從1級。</p>
+      </div>
+
+      <div class="card">
+        <h2>七維（預測素質）</h2>
+        <div class="stats-grid" id="nl1-stats"></div>
+      </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="pet-db.js"></script>
@@ -464,7 +541,7 @@ function num(v, fallback) {
 
 // 對應說明文件 §1、§8、§14.1：正算
 function computeForward(state) {
-  const { tops, drops, mult, lv, alloc, rand } = state;
+  const { tops, drops, mult, lv, alloc, rand, startLv } = state;
   const fixed = [], growth = [], rnd = [], nat = [];
   for (let i = 0; i < 5; i++) {
     const f = tops[i] - drops[i];
@@ -473,7 +550,8 @@ function computeForward(state) {
     fixed.push(f); growth.push(g); rnd.push(r);
     nat.push(f * mult + g * (lv - 1) + r);
   }
-  const P = lv - 1;
+  // startLv 只影響可配點數；成長仍用絕對等級(lv-1)，因為成長是物種既有的，跟玩家何時開始操作配點無關
+  const P = lv - (startLv === undefined || startLv === null ? 1 : startLv);
   const sumNat = nat.reduce((a, b) => a + b, 0);
   const cap = nat.map(n => Math.min(P, Math.max(0, Math.floor((sumNat - 2 * n + P) / 2))));
   const eff = alloc.map((a, i) => Math.min(a, cap[i]));
@@ -538,11 +616,16 @@ buildInputRow('rev-top', 'rev-top', '手動輸入檔次<span class="row-hint">�
 buildInputRow('rev-drop', 'rev-drop', '掉檔<span class="row-hint">0~4</span>', [0,0,0,0,0]);
 buildInputRow('rev-alloc', 'rev-alloc', '配點', [0,0,0,0,0]);
 buildInputRow('rev-measured', 'rev-measured', '論壇寵物實際BP<span class="row-hint">含小數</span>', ['','','','','' ], '0.01');
+buildInputRow('nl1-drop', 'nl1-drop', '掉檔<span class="row-hint">0~4</span>', [0,0,0,0,0]);
+buildInputRow('nl1-now', 'nl1-now', '現在的BP<span class="row-hint">含小數，留底對照用，不影響計算</span>', ['','','','',''], '0.01');
+buildStrategyRow('nl1-strat', 'nl1');
+buildInputRow('nl1-alloc', 'nl1-alloc', '配點<span class="row-hint" id="nl1-alloc-hint"></span>', [0,0,0,0,0]);
 
 // datalist 選項（一次塞完，2500+ 筆）
 const petOptionsHtml = Array.from(PET_MAP.keys()).map(n => `<option value="${n}">`).join('');
 document.getElementById('pet-list-fwd').innerHTML = petOptionsHtml;
 document.getElementById('pet-list-rev').innerHTML = petOptionsHtml;
+document.getElementById('pet-list-nl1').innerHTML = petOptionsHtml;
 
 // ---------- 輸入模式（選擇寵物 / 手動輸入檔次）----------
 function getMode(prefix) {
@@ -573,7 +656,7 @@ function readFiveRaw(prefix) {
 }
 
 // ---------- 配點策略 ----------
-let fwdAuto = false;   // 值是策略自動填的、還沒被手動改過
+const autoAlloc = { fwd: false, nl1: false };   // 值是策略自動填的、還沒被手動改過
 
 function readForwardState() {
   const mode = getMode('fwd');
@@ -589,22 +672,22 @@ function readForwardState() {
   };
 }
 
-function getStrategy() {
-  const el = document.querySelector('input[name="fwd-strat"]:checked');
+function getStrategy(prefix) {
+  const el = document.querySelector(`input[name="${prefix}-strat"]:checked`);
   return el ? el.value : 'mix';
 }
 
-function setAllocLock(locked) {
-  LABELS.forEach((_, i) => { document.getElementById(`fwd-alloc-${i}`).readOnly = locked; });
+function setAllocLock(prefix, locked) {
+  LABELS.forEach((_, i) => { document.getElementById(`${prefix}-alloc-${i}`).readOnly = locked; });
 }
 
-// 先照總點數配滿，爆掉的部分交給 renderForward 最後回滾
-function refillAlloc() {
-  const s = getStrategy();
-  fwdAuto = (s !== 'mix');
-  if (!fwdAuto) return;
-  const P = Math.max(0, num(document.getElementById('fwd-lv').value, 145) - 1);
-  LABELS.forEach((_, i) => { document.getElementById(`fwd-alloc-${i}`).value = (i === +s) ? P : 0; });
+// 先照總點數配滿，爆掉的部分交給 render 函式最後回滾
+function refillAlloc(prefix, P) {
+  const s = getStrategy(prefix);
+  autoAlloc[prefix] = (s !== 'mix');
+  if (!autoAlloc[prefix]) return;
+  P = Math.max(0, P);
+  LABELS.forEach((_, i) => { document.getElementById(`${prefix}-alloc-${i}`).value = (i === +s) ? P : 0; });
 }
 
 function renderForward() {
@@ -627,7 +710,7 @@ function renderForward() {
   const P = Math.max(0, lv - 1);
   const rest = P - alloc.reduce((a, b) => a + b, 0);
   const over = -rest;
-  setAllocLock(fwdAuto && rest === 0);
+  setAllocLock('fwd', autoAlloc.fwd && rest === 0);
 
   const hint = document.getElementById('fwd-alloc-hint');
   hint.textContent = over > 0 ? `可配 ${P} 點・超出 ${over} 點`
@@ -713,6 +796,77 @@ function renderReverse() {
   ];
   document.getElementById('rev-detail').innerHTML = detailRows.map(([name, vals]) =>
     `<tr><td class="row-label">${name}</td>${cells(vals)}</tr>`
+  ).join('');
+}
+
+// ---------- 非1級寵計算 ----------
+// 用途：寵物不是從1級開始被玩家操作配點（例如野生／捕獲時已經某等級），
+// 可配點數＝目標等級－起始等級，不是目標等級－1；不處理隨機檔（見說明檔外的對話結論，野生寵的面板數字兜不進隨機檔模型）。
+function readNonlv1State() {
+  const petName = document.getElementById('nl1-pet').value.trim();
+  return {
+    petName,
+    tops: getTops('pet', petName, [0, 0, 0, 0, 0]),
+    drops: readFive('nl1-drop', 0),
+    alloc: readFive('nl1-alloc', 0),
+    mult: num(document.getElementById('nl1-mult').value, 0.2),
+    startLv: num(document.getElementById('nl1-start').value, 1),
+    lv: num(document.getElementById('nl1-lv').value, 145)
+  };
+}
+
+function refillAllocNl1() {
+  const { lv, startLv } = readNonlv1State();
+  refillAlloc('nl1', lv - startLv);
+}
+
+function renderNonlv1() {
+  const st = readNonlv1State();
+  const { petName, tops, drops, lv, startLv } = st;
+  showPetWarn('nl1', 'pet', petName);
+
+  let r = computeForward({ ...st, rand: [0, 0, 0, 0, 0] });
+
+  // 回滾邏輯跟正算一致：配不進去的點從輸入格退掉
+  const rolled = r.eff.map(v => Math.max(0, v));
+  if (rolled.some((v, i) => v !== st.alloc[i])) {
+    rolled.forEach((v, i) => { document.getElementById(`nl1-alloc-${i}`).value = v; });
+    st.alloc = rolled;
+    r = computeForward({ ...st, rand: [0, 0, 0, 0, 0] });
+  }
+  const alloc = st.alloc;
+
+  const P = Math.max(0, lv - startLv);
+  const rest = P - alloc.reduce((a, b) => a + b, 0);
+  const over = -rest;
+  setAllocLock('nl1', autoAlloc.nl1 && rest === 0);
+
+  const hint = document.getElementById('nl1-alloc-hint');
+  hint.textContent = over > 0 ? `可配 ${P} 點・超出 ${over} 點`
+                   : rest > 0 ? `可配 ${P} 點・剩餘 ${rest} 點`
+                              : `可配 ${P} 點・已配完`;
+  hint.classList.toggle('neg', over > 0 || rest > 0);
+
+  const cells = vals => vals.map(v => `<td>${v}</td>`).join('');
+
+  document.getElementById('nl1-result').innerHTML =
+    `<tr class="emph"><td class="row-label">面板BP</td>${cells(r.panelBP)}</tr>`;
+
+  const detailRows = [
+    ['頂檔', tops],
+    ['固定檔', r.fixed],
+    ['成長', r.growth],
+    ['可加上限', r.cap],
+    ['有效配點', r.eff],
+    ['可重配點', r.leftover.map((v, i) => `<span class="${v > 0 ? 'neg' : ''}">${v}</span>`)]
+  ];
+  document.getElementById('nl1-detail').innerHTML = detailRows.map(([name, vals]) =>
+    `<tr><td class="row-label">${name}</td>${cells(vals)}</tr>`
+  ).join('');
+
+  const statsEl = document.getElementById('nl1-stats');
+  statsEl.innerHTML = Object.entries(r.stats).map(([name, v]) =>
+    `<div class="stat-box"><div class="label">${name}</div><div class="value">${v}</div></div>`
   ).join('');
 }
 
@@ -859,16 +1013,22 @@ document.getElementById('rec-clear').addEventListener('click', (e) => {
 
 // ---------- 事件綁定 ----------
 // 手動改過就脫離自動模式，不再自動鎖回唯讀；要回自動值就重點一次策略
-LABELS.forEach((_, i) => document.getElementById(`fwd-alloc-${i}`).addEventListener('input', () => { fwdAuto = false; }));
+LABELS.forEach((_, i) => document.getElementById(`fwd-alloc-${i}`).addEventListener('input', () => { autoAlloc.fwd = false; }));
 document.querySelectorAll('#panel-forward input').forEach(el => el.addEventListener('input', renderForward));
 document.querySelectorAll('#panel-forward select').forEach(el => el.addEventListener('change', renderForward));
 document.querySelectorAll('input[name="fwd-mode"]').forEach(el => el.addEventListener('change', () => { applyMode('fwd'); renderForward(); }));
 // 用 click 不用 change：手動改過之後再點一次同一個策略要能重填
-document.querySelectorAll('input[name="fwd-strat"]').forEach(el => el.addEventListener('click', () => { refillAlloc(); renderForward(); }));
-document.getElementById('fwd-lv').addEventListener('input', () => { if (getStrategy() !== 'mix') { refillAlloc(); renderForward(); } });
+document.querySelectorAll('input[name="fwd-strat"]').forEach(el => el.addEventListener('click', () => { refillAlloc('fwd', num(document.getElementById('fwd-lv').value, 145) - 1); renderForward(); }));
+document.getElementById('fwd-lv').addEventListener('input', () => { if (getStrategy('fwd') !== 'mix') { refillAlloc('fwd', num(document.getElementById('fwd-lv').value, 145) - 1); renderForward(); } });
 document.querySelectorAll('input[name="rev-mode"]').forEach(el => el.addEventListener('change', () => { applyMode('rev'); renderReverse(); }));
 document.querySelectorAll('#panel-reverse input').forEach(el => el.addEventListener('input', renderReverse));
 document.querySelectorAll('#panel-reverse select').forEach(el => el.addEventListener('change', renderReverse));
+
+LABELS.forEach((_, i) => document.getElementById(`nl1-alloc-${i}`).addEventListener('input', () => { autoAlloc.nl1 = false; }));
+document.querySelectorAll('#panel-nonlv1 input').forEach(el => el.addEventListener('input', renderNonlv1));
+document.querySelectorAll('#panel-nonlv1 select').forEach(el => el.addEventListener('change', renderNonlv1));
+document.querySelectorAll('input[name="nl1-strat"]').forEach(el => el.addEventListener('click', () => { refillAllocNl1(); renderNonlv1(); }));
+['nl1-lv', 'nl1-start'].forEach(id => document.getElementById(id).addEventListener('input', () => { if (getStrategy('nl1') !== 'mix') { refillAllocNl1(); renderNonlv1(); } }));
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -884,6 +1044,7 @@ applyMode('fwd');
 applyMode('rev');
 renderForward();
 renderReverse();
+renderNonlv1();
 loadRecords();
 renderRecords();
 </script>
