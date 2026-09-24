@@ -432,17 +432,6 @@
             <datalist id="pet-list-nl1"></datalist>
             <span class="field-warn" id="nl1-pet-warn"></span>
           </div>
-          <div class="field" style="max-width:120px;">
-            <label>倍率</label>
-            <select id="nl1-mult">
-              <option value="0.2" selected>0.2</option>
-              <option value="0.25">0.25</option>
-              <option value="0.3">0.3</option>
-              <option value="0.5">0.5</option>
-              <option value="0.6">0.6</option>
-              <option value="0.7">0.7</option>
-            </select>
-          </div>
           <div class="field" style="max-width:100px;">
             <label>起始等級</label>
             <input type="number" id="nl1-start" value="1">
@@ -469,6 +458,7 @@
       <div class="col-right">
       <div class="card">
         <h2>五圍 BP（目標等級）</h2>
+        <div class="banner warn" id="nl1-banner" hidden></div>
         <div class="table-scroll">
           <table class="stat-table">
             <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
@@ -484,7 +474,7 @@
             </table>
           </div>
         </details>
-        <p class="hint">配點以「目標等級－起始等級」計算可配點數，不含隨機檔；野生寵通常從遇到當下的等級才開始算配點，不是從1級。</p>
+        <p class="hint">目標BP＝現在的BP＋每級成長×（目標−起始）＋配點（共 目標−起始 點）。倍率、隨機檔、起始等級之前配過的點都已經包含在現在的BP裡，不用另外填；掉檔要填，因為每級成長看固定檔。</p>
       </div>
 
       <div class="card">
@@ -539,24 +529,12 @@ function num(v, fallback) {
   return isNaN(n) ? fallback : n;
 }
 
-// 對應說明文件 §1、§8、§14.1：正算
-function computeForward(state) {
-  const { tops, drops, mult, lv, alloc, rand, startLv } = state;
-  const fixed = [], growth = [], rnd = [], nat = [];
-  for (let i = 0; i < 5; i++) {
-    const f = tops[i] - drops[i];
-    const g = growthPerLevel(f);
-    const r = randomBP(rand[i], mult);
-    fixed.push(f); growth.push(g); rnd.push(r);
-    nat.push(f * mult + g * (lv - 1) + r);
-  }
-  // startLv 只影響可配點數；成長仍用絕對等級(lv-1)，因為成長是物種既有的，跟玩家何時開始操作配點無關
-  const P = lv - (startLv === undefined || startLv === null ? 1 : startLv);
+// 對應說明文件 §8.1、§4：由自然BP與可配點數 P 算爆點上限、有效配點、最終BP、七維
+function allocateAndStats(nat, alloc, P) {
   const sumNat = nat.reduce((a, b) => a + b, 0);
   const cap = nat.map(n => Math.min(P, Math.max(0, Math.floor((sumNat - 2 * n + P) / 2))));
   const eff = alloc.map((a, i) => Math.min(a, cap[i]));
   const leftover = alloc.map((a, i) => a - eff[i]);
-  const panelBP = fixed.map((f, i) => Math.round(f * mult + growth[i] * (lv - 1) + eff[i]));
   const finalBP = nat.map((n, i) => n + eff[i]);
   const stats = {};
   for (const name in COEFF) {
@@ -566,7 +544,38 @@ function computeForward(state) {
     for (let i = 0; i < 5; i++) v += coeffs[i] * finalBP[i];
     stats[name] = Math.floor(v);
   }
-  return { fixed, growth, rnd, nat, cap, eff, leftover, panelBP, finalBP, stats };
+  return { cap, eff, leftover, finalBP, stats };
+}
+
+// 對應說明文件 §1、§8、§14.1：正算
+function computeForward(state) {
+  const { tops, drops, mult, lv, alloc, rand } = state;
+  const fixed = [], growth = [], rnd = [], nat = [];
+  for (let i = 0; i < 5; i++) {
+    const f = tops[i] - drops[i];
+    const g = growthPerLevel(f);
+    const r = randomBP(rand[i], mult);
+    fixed.push(f); growth.push(g); rnd.push(r);
+    nat.push(f * mult + g * (lv - 1) + r);
+  }
+  const res = allocateAndStats(nat, alloc, lv - 1);
+  const panelBP = fixed.map((f, i) => Math.round(f * mult + growth[i] * (lv - 1) + res.eff[i]));
+  return { fixed, growth, rnd, nat, panelBP, ...res };
+}
+
+// 非1級：以現在的BP為底往上推，倍率、隨機檔、起始等級前的配點都已包含在現在的BP裡
+// 起始等級填1、現在的BP填1等BP時，結果與正算相同
+function computeNonlv1(state) {
+  const { tops, drops, now, startLv, lv, alloc } = state;
+  const span = lv - startLv;
+  const fixed = [], growth = [], nat = [];
+  for (let i = 0; i < 5; i++) {
+    const f = tops[i] - drops[i];
+    const g = growthPerLevel(f);
+    fixed.push(f); growth.push(g);
+    nat.push(now[i] + g * span);
+  }
+  return { fixed, growth, nat, ...allocateAndStats(nat, alloc, span) };
 }
 
 // 對應說明文件 §7、§14.2：推算（算隨機檔）
@@ -617,7 +626,7 @@ buildInputRow('rev-drop', 'rev-drop', '掉檔<span class="row-hint">0~4</span>',
 buildInputRow('rev-alloc', 'rev-alloc', '配點', [0,0,0,0,0]);
 buildInputRow('rev-measured', 'rev-measured', '論壇寵物實際BP<span class="row-hint">含小數</span>', ['','','','','' ], '0.01');
 buildInputRow('nl1-drop', 'nl1-drop', '掉檔<span class="row-hint">0~4</span>', [0,0,0,0,0]);
-buildInputRow('nl1-now', 'nl1-now', '現在的BP<span class="row-hint">含小數，留底對照用，不影響計算</span>', ['','','','',''], '0.01');
+buildInputRow('nl1-now', 'nl1-now', '現在的BP<span class="row-hint">起始等級時的BP，含小數</span>', ['','','','',''], '0.01');
 buildStrategyRow('nl1-strat', 'nl1');
 buildInputRow('nl1-alloc', 'nl1-alloc', '配點<span class="row-hint" id="nl1-alloc-hint"></span>', [0,0,0,0,0]);
 
@@ -800,16 +809,14 @@ function renderReverse() {
 }
 
 // ---------- 非1級寵計算 ----------
-// 用途：寵物不是從1級開始被玩家操作配點（例如野生／捕獲時已經某等級），
-// 可配點數＝目標等級－起始等級，不是目標等級－1；不處理隨機檔（見說明檔外的對話結論，野生寵的面板數字兜不進隨機檔模型）。
 function readNonlv1State() {
   const petName = document.getElementById('nl1-pet').value.trim();
   return {
     petName,
     tops: getTops('pet', petName, [0, 0, 0, 0, 0]),
     drops: readFive('nl1-drop', 0),
+    now: readFive('nl1-now', NaN),
     alloc: readFive('nl1-alloc', 0),
-    mult: num(document.getElementById('nl1-mult').value, 0.2),
     startLv: num(document.getElementById('nl1-start').value, 1),
     lv: num(document.getElementById('nl1-lv').value, 145)
   };
@@ -822,26 +829,40 @@ function refillAllocNl1() {
 
 function renderNonlv1() {
   const st = readNonlv1State();
-  const { petName, tops, drops, lv, startLv } = st;
-  showPetWarn('nl1', 'pet', petName);
+  const { petName, tops, lv, startLv } = st;
+  document.getElementById('nl1-pet-warn').textContent =
+    (petName && !PET_MAP.has(petName)) ? '查無此寵物' : '';
 
-  let r = computeForward({ ...st, rand: [0, 0, 0, 0, 0] });
+  const P = Math.max(0, lv - startLv);
+  const hint = document.getElementById('nl1-alloc-hint');
+  const banner = document.getElementById('nl1-banner');
+  const msg = !PET_MAP.has(petName) ? '先選寵物（每級成長要看檔次）'
+            : st.now.some(Number.isNaN) ? '填入五項現在的BP才會計算'
+            : lv < startLv ? '目標等級不能低於起始等級' : '';
+  banner.hidden = !msg;
+  banner.textContent = msg;
+  if (msg) {
+    hint.textContent = `可配 ${P} 點`;
+    hint.classList.remove('neg');
+    ['nl1-result', 'nl1-detail', 'nl1-stats'].forEach(id => { document.getElementById(id).innerHTML = ''; });
+    return;
+  }
+
+  let r = computeNonlv1(st);
 
   // 回滾邏輯跟正算一致：配不進去的點從輸入格退掉
   const rolled = r.eff.map(v => Math.max(0, v));
   if (rolled.some((v, i) => v !== st.alloc[i])) {
     rolled.forEach((v, i) => { document.getElementById(`nl1-alloc-${i}`).value = v; });
     st.alloc = rolled;
-    r = computeForward({ ...st, rand: [0, 0, 0, 0, 0] });
+    r = computeNonlv1(st);
   }
   const alloc = st.alloc;
 
-  const P = Math.max(0, lv - startLv);
   const rest = P - alloc.reduce((a, b) => a + b, 0);
   const over = -rest;
   setAllocLock('nl1', autoAlloc.nl1 && rest === 0);
 
-  const hint = document.getElementById('nl1-alloc-hint');
   hint.textContent = over > 0 ? `可配 ${P} 點・超出 ${over} 點`
                    : rest > 0 ? `可配 ${P} 點・剩餘 ${rest} 點`
                               : `可配 ${P} 點・已配完`;
@@ -850,12 +871,14 @@ function renderNonlv1() {
   const cells = vals => vals.map(v => `<td>${v}</td>`).join('');
 
   document.getElementById('nl1-result').innerHTML =
-    `<tr class="emph"><td class="row-label">面板BP</td>${cells(r.panelBP)}</tr>`;
+    `<tr class="emph"><td class="row-label">精確BP</td>${cells(r.finalBP.map(v => v.toFixed(2)))}</tr>`;
 
   const detailRows = [
     ['頂檔', tops],
     ['固定檔', r.fixed],
     ['成長', r.growth],
+    ['現在的BP', st.now.map(v => v.toFixed(2))],
+    ['自然BP', r.nat.map(v => v.toFixed(2))],
     ['可加上限', r.cap],
     ['有效配點', r.eff],
     ['可重配點', r.leftover.map((v, i) => `<span class="${v > 0 ? 'neg' : ''}">${v}</span>`)]
@@ -1026,7 +1049,6 @@ document.querySelectorAll('#panel-reverse select').forEach(el => el.addEventList
 
 LABELS.forEach((_, i) => document.getElementById(`nl1-alloc-${i}`).addEventListener('input', () => { autoAlloc.nl1 = false; }));
 document.querySelectorAll('#panel-nonlv1 input').forEach(el => el.addEventListener('input', renderNonlv1));
-document.querySelectorAll('#panel-nonlv1 select').forEach(el => el.addEventListener('change', renderNonlv1));
 document.querySelectorAll('input[name="nl1-strat"]').forEach(el => el.addEventListener('click', () => { refillAllocNl1(); renderNonlv1(); }));
 ['nl1-lv', 'nl1-start'].forEach(id => document.getElementById(id).addEventListener('input', () => { if (getStrategy('nl1') !== 'mix') { refillAllocNl1(); renderNonlv1(); } }));
 
