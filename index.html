@@ -86,12 +86,12 @@
   .tool.soon .name{color:var(--muted);}
   /* 版本更新紀錄 */
   .log{list-style:none;margin:0;padding:0;}
-  .log li{
+  .log > li{
     display:grid;grid-template-columns:auto auto 1fr;gap:10px;
     align-items:baseline;
     padding:9px 0;border-top:1px solid var(--line);
   }
-  .log li:first-child{border-top:none;}
+  .log > li:first-child{border-top:none;}
   .log .date{font-family:var(--mono);font-size:.78rem;color:var(--muted);white-space:nowrap;}
   .log .ver{
     font-family:var(--mono);font-size:.72rem;font-weight:600;
@@ -99,8 +99,9 @@
     border-radius:4px;padding:1px 7px;white-space:nowrap;
   }
   .log .what{font-size:.88rem;}
+  .log .what ol{margin:0;padding-left:1.4em;}
   @media (max-width:520px){
-    .log li{grid-template-columns:auto 1fr;}
+    .log > li{grid-template-columns:auto 1fr;}
     .log .what{grid-column:1 / -1;}
   }
   footer{margin-top:26px;color:var(--muted);font-size:.78rem;text-align:center;}
@@ -150,7 +151,14 @@
       <li>
         <span class="date">2026-09-24</span>
         <span class="ver">v1.5</span>
-        <span class="what">寵物算檔器新增「非1級寵計算」分頁：輸入現在的BP、起始等級、目標等級、掉檔與配點策略，推算非1級起養（例如野生捕獲）的寵物練到目標等級的BP與素質；倍率與隨機檔已包含在現在的BP裡，不用另外填。</span>
+        <div class="what">
+          <ol>
+            <li>寵物算檔器新增「非1級寵計算」分頁，給非1級起養（例如野生捕獲）的寵物用。「往上推」輸入現在的BP、起始等級、目標等級、掉檔與配點策略，推算練到目標等級的BP與素質；倍率與隨機檔已包含在現在的BP裡，不用另外填。</li>
+            <li>同一分頁可切換「往回推」：輸入現在等級的BP、掉檔與已配點，推回起始等級的BP與素質。</li>
+            <li>五圍輸入框內距縮小，三位數BP（例如 390.93）不會再被切掉。</li>
+            <li>寵物算檔器程式依功能拆成樣式、公式與各分頁獨立檔案，計算結果不變。</li>
+          </ol>
+        </div>
       </li>
       <li>
         <span class="date">2026-09-22</span>

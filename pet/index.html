@@ -6,223 +6,7 @@
 <title>魔力寶貝算檔器</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  /* 明亮（預設） */
-  :root{
-    --bg:#f4f0f9;
-    --panel:#ffffff;
-    --panel-2:#f2edf9;
-    --line:#dcd2ea;
-    --text:#2a2140;
-    --muted:#6a5f85;
-    --gold:#8f6510;
-    --gold-dim:#c2a24a;
-    --gold-hover:#7a550a;
-    --on-gold:#ffffff;
-    --teal:#1c7a4a;
-    --coral:#c0392b;
-    --ok-bg:#e9f7ef;
-    --warn-bg:#fdeceb;
-    --shadow:0 1px 2px rgba(42,33,64,.07);
-    --mono: 'JetBrains Mono', monospace;
-  }
-  /* 暗色 */
-  :root[data-app-theme="dark"]{
-    --bg:#211a2e;
-    --panel:#2b2240;
-    --panel-2:#332950;
-    --line:#473a63;
-    --text:#f1ecf7;
-    --muted:#a99dc4;
-    --gold:#e0b74c;
-    --gold-dim:#8a713a;
-    --gold-hover:#eec765;
-    --on-gold:#211a2e;
-    --teal:#6fcf97;
-    --coral:#f0806a;
-    --ok-bg:rgba(111,207,151,.08);
-    --warn-bg:rgba(240,128,106,.10);
-    --shadow:none;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:'Noto Sans TC', system-ui, sans-serif;
-    line-height:1.55;
-    padding:20px 14px 60px;
-  }
-  .wrap{max-width:1280px;margin:0 auto;}
-  .two-col{
-    display:grid;
-    grid-template-columns:minmax(420px,460px) minmax(0,1fr);
-    gap:18px;align-items:start;margin-bottom:18px;
-  }
-  .col-left,.col-right{display:flex;flex-direction:column;gap:18px;min-width:0;}
-  .col-left .row-top{gap:10px;}
-  .col-left #fwd-pet-field, .col-left #rev-pet-field{flex-basis:100%;}
-  .col-left{position:sticky;top:16px;}
-  .two-col .card{margin-bottom:0;}
-  @media (max-width:900px){
-    .two-col{grid-template-columns:minmax(0,1fr);}
-    .col-left{position:static;}
-  }
-  header h1{
-    font-family:'Noto Serif TC', serif;
-    font-size:1.6rem;
-    margin:0 0 4px;
-    color:var(--gold);
-    letter-spacing:.02em;
-  }
-  header p{margin:0;color:var(--muted);font-size:.88rem;}
-  .back-link{
-    display:inline-block;margin-bottom:6px;
-    color:var(--muted);text-decoration:none;font-size:.8rem;
-  }
-  .back-link:hover{color:var(--gold);}
-  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
-  .tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);}
-  .tab-btn{
-    background:none;border:none;color:var(--muted);
-    font-family:'Noto Sans TC',sans-serif;font-size:.95rem;font-weight:500;
-    padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;
-  }
-  .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
-  .panel{display:none;}
-  .panel.active{display:block;}
-  .card{
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:10px;
-    box-shadow:var(--shadow);
-    padding:18px 18px 20px;
-    margin-bottom:18px;
-  }
-  .card h2{
-    font-size:.95rem;margin:0 0 14px;color:var(--gold);
-    font-weight:700;letter-spacing:.02em;
-  }
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:8px;
-  }
-  .grid.two{grid-template-columns:1fr 1fr;}
-  .field{display:flex;flex-direction:column;gap:4px;}
-  .field label{font-size:.72rem;color:var(--muted);}
-  .field input, .field select{
-    background:var(--panel-2);
-    border:1px solid var(--line);
-    color:var(--text);
-    border-radius:6px;
-    padding:7px 8px;
-    font-family:var(--mono);
-    font-size:.88rem;
-    width:100%;
-  }
-  .field input:focus{outline:1px solid var(--gold);}
-  .row-top{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
-  .row-top .field{min-width:150px;flex:1;}
-  .stat-labels{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:4px;}
-  .stat-labels span{font-size:.72rem;color:var(--muted);text-align:center;}
-  .hint{font-size:.72rem;color:var(--muted);margin-top:6px;}
-  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.82rem;}
-  th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;}
-  th:first-child,td:first-child{text-align:left;color:var(--muted);font-family:'Noto Sans TC',sans-serif;}
-  th{color:var(--muted);font-weight:500;font-size:.74rem;}
-  .table-scroll{overflow-x:auto;}
-  .stat-table{table-layout:fixed;min-width:340px;}
-  .col-right .stat-table{min-width:430px;}
-  .stat-table th{text-align:center;}
-  .stat-table td:first-child, .stat-table th:first-child{width:110px;}
-  .stat-table td, .stat-table th{padding:6px 4px;}
-  .stat-table td:first-child{padding-left:2px;}
-  .stat-table td.row-label{
-    white-space:normal;font-family:'Noto Sans TC',sans-serif;
-    color:var(--text);font-size:.82rem;vertical-align:middle;
-  }
-  .stat-table .row-hint{display:block;font-size:.68rem;color:var(--muted);margin-top:2px;font-weight:400;}
-  .stat-table td{vertical-align:middle;}
-  .stat-table input{
-    width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);
-    border-radius:6px;padding:6px 5px;font-family:var(--mono);font-size:.84rem;text-align:center;
-  }
-  .stat-table input:focus{outline:1px solid var(--gold);}
-  .stat-table input::-webkit-outer-spin-button,
-  .stat-table input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-  .stat-table input[type=number]{-moz-appearance:textfield;appearance:textfield;}
-  .stat-table tr.emph td{color:var(--gold);font-size:.88rem;}
-  .stat-table tr.emph td:first-child{color:var(--text);font-size:.82rem;}
-  .stat-table input[readonly]{background:var(--bg);color:var(--muted);cursor:not-allowed;}
-  .stat-table .row-hint.neg{color:var(--coral);}
-  /* 配點策略列：radio 壓在下一列五個輸入框的正上方 */
-  .stat-table tr.strat-row td{border-bottom:none;padding-bottom:2px;}
-  .stat-table td.strat{text-align:center;}
-  .stat-table td.strat input{width:auto;margin:0;accent-color:var(--gold);cursor:pointer;}
-  .strat-mix{display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
-  .strat-mix input{width:auto;margin:0;accent-color:var(--gold);cursor:pointer;}
-  [hidden]{display:none !important;}
-  .mode-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-  .radio{
-    display:inline-flex;align-items:center;gap:7px;cursor:pointer;
-    font-size:.82rem;color:var(--muted);
-    background:var(--panel-2);border:1px solid var(--line);
-    border-radius:6px;padding:7px 14px;
-  }
-  .radio:hover{border-color:var(--gold-dim);}
-  .radio input{accent-color:var(--gold);margin:0;cursor:pointer;}
-  .radio:has(input:checked){border-color:var(--gold);color:var(--gold);}
-  .radio:has(input:focus-visible){outline:2px solid var(--gold);outline-offset:1px;}
-  .field-warn{font-size:.72rem;color:var(--coral);min-height:1em;}
-  .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
-  .card-head h2{margin:0;}
-  .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
-  .btn{
-    background:var(--panel-2);border:1px solid var(--line);color:var(--text);
-    font-family:'Noto Sans TC',sans-serif;font-size:.82rem;
-    padding:7px 14px;border-radius:6px;cursor:pointer;
-  }
-  .btn:hover{border-color:var(--gold-dim);}
-  .btn:focus-visible{outline:2px solid var(--gold);outline-offset:1px;}
-  .btn.primary{background:var(--gold);border-color:var(--gold);color:var(--on-gold);font-weight:700;}
-  .btn.primary:hover{background:var(--gold-hover);border-color:var(--gold-hover);}
-  .btn.danger{color:var(--coral);}
-  .btn.danger:hover{border-color:var(--coral);}
-  details.sub{background:transparent;border:none;padding:0;margin-top:14px;}
-  details.sub summary{font-size:.78rem;color:var(--muted);}
-  details.sub summary:hover{color:var(--gold);}
-  details.sub[open] summary{color:var(--gold);margin-bottom:8px;}
-  #rec-table{font-size:.78rem;}
-  #rec-table td:nth-child(2){color:var(--text);}
-  #rec-table .empty{color:var(--muted);text-align:left;font-family:'Noto Sans TC',sans-serif;}
-  #rec-table th:first-child, #rec-table td:first-child{width:32px;padding-left:4px;padding-right:4px;}
-  #rec-table .row-hint{display:block;font-size:.68rem;color:var(--muted);margin-top:2px;font-weight:400;}
-  .rec-del{
-    background:transparent;border:1px solid transparent;color:var(--muted);
-    font-size:.9rem;line-height:1;width:24px;height:24px;border-radius:6px;cursor:pointer;
-  }
-  .rec-del:hover{color:var(--coral);border-color:var(--coral);}
-  .rec-del:focus-visible{outline:2px solid var(--gold);outline-offset:1px;}
-  .banner{
-    padding:12px 14px;border-radius:8px;font-size:.9rem;margin-bottom:12px;
-    border:1px solid var(--line);
-  }
-  .banner.ok{background:var(--ok-bg);border-color:var(--teal);color:var(--teal);}
-  .banner.warn{background:var(--warn-bg);border-color:var(--coral);color:var(--coral);}
-  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;}
-  .stat-box{
-    background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
-    padding:10px;text-align:center;
-  }
-  .stat-box .label{font-size:.72rem;color:var(--muted);}
-  .stat-box .value{font-family:var(--mono);font-size:1.2rem;color:var(--gold);margin-top:2px;}
-  details{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-top:8px;}
-  summary{cursor:pointer;color:var(--gold);font-size:.88rem;font-weight:500;}
-  details p, details li{font-size:.82rem;color:var(--muted);}
-  code{background:var(--panel-2);padding:1px 5px;border-radius:4px;font-family:var(--mono);}
-  .neg{color:var(--coral);}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <script>
@@ -421,7 +205,11 @@
 
   <!-- ============ 非1級寵計算 ============ -->
   <div class="panel" id="panel-nonlv1">
-    <div class="two-col">
+    <div class="mode-row">
+      <label class="radio"><input type="radio" name="nl1-dir" value="up" checked>往上推（算目標等級BP）</label>
+      <label class="radio"><input type="radio" name="nl1-dir" value="down">往回推（算起始等級BP）</label>
+    </div>
+    <div class="two-col" id="nl1-view-up">
       <div class="col-left">
       <div class="card">
         <h2>輸入</h2>
@@ -483,593 +271,78 @@
       </div>
       </div>
     </div>
+
+    <div class="two-col" id="nl1-view-down" hidden>
+      <div class="col-left">
+      <div class="card">
+        <h2>輸入</h2>
+        <div class="row-top">
+          <div class="field" id="ini-pet-field">
+            <label>選擇寵物（可打字搜尋）</label>
+            <input list="pet-list-ini" id="ini-pet" placeholder="輸入寵物名稱…">
+            <datalist id="pet-list-ini"></datalist>
+            <span class="field-warn" id="ini-pet-warn"></span>
+          </div>
+          <div class="field" style="max-width:100px;">
+            <label>起始等級</label>
+            <input type="number" id="ini-start" value="1">
+          </div>
+          <div class="field" style="max-width:100px;">
+            <label>現在等級</label>
+            <input type="number" id="ini-lv" value="145">
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="stat-table">
+            <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
+            <tbody>
+              <tr id="ini-drop"></tr>
+              <tr id="ini-now"></tr>
+              <tr id="ini-strat" class="strat-row"></tr>
+              <tr id="ini-alloc"></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </div>
+      <div class="col-right">
+      <div class="card">
+        <h2>五圍 BP（起始等級）</h2>
+        <div class="banner warn" id="ini-banner" hidden></div>
+        <div class="table-scroll">
+          <table class="stat-table">
+            <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
+            <tbody id="ini-result"></tbody>
+          </table>
+        </div>
+        <details class="sub">
+          <summary>完整明細（頂檔／固定檔／成長／扣除量）</summary>
+          <div class="table-scroll">
+            <table class="stat-table">
+              <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
+              <tbody id="ini-detail"></tbody>
+            </table>
+          </div>
+        </details>
+        <p class="hint">起始BP＝現在的BP－每級成長×（現在−起始）－已配點。已配點照實際配的填，不套爆點上限；掉檔要填，因為每級成長看固定檔。</p>
+      </div>
+
+      <div class="card">
+        <h2>七維（起始等級）</h2>
+        <div class="stats-grid" id="ini-stats"></div>
+      </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script src="pet-db.js"></script>
-<script>
-// PET_DB 由 pet-db.js 提供（Tab 分隔純文字），此處解析回原本的陣列格式
-const PET_DB = (typeof PET_DB_RAW === "string" ? PET_DB_RAW : "")
-  .trim().split("\n").map(s => s.trim()).filter(Boolean)
-  .map(line => { const c = line.split("\t"); return [c[0], +c[1], +c[2], +c[3], +c[4], +c[5]]; });
-if (!PET_DB.length) console.error("pet-db.js 未載入或為空：請確認 pet-db.js 與本 HTML 放在同一資料夾");
-const COEFF = {"生命": [8, 2, 3, 3, 1, 20], "魔力": [1, 2, 2, 2, 10, 20], "攻擊": [0.2, 2.7, 0.3, 0.3, 0.2, 20], "防禦": [0.2, 0.3, 3, 0.3, 0.2, 20], "敏捷": [0.1, 0.2, 0.2, 2, 0.1, 20], "精神": [-0.3, -0.1, 0.2, -0.1, 0.8, 100], "回復": [0.8, -0.1, -0.1, 0.2, -0.3, 100]};
-const REM_ADJ = [0, 0.003, 0.001, -0.001, -0.003];
-
-// 建立寵物名稱查表（重複名稱取第一筆，行為對齊 Excel MATCH）
-const PET_MAP = new Map();
-for (const p of PET_DB) {
-  if (!PET_MAP.has(p[0])) PET_MAP.set(p[0], p.slice(1));
-}
-
-// 對應說明文件 §3：成長值公式（每級BP）
-function growthPerLevel(fixedStat) {
-  if (fixedStat === 0) return 0;
-  const raw = fixedStat * 0.042 - 0.005 + REM_ADJ[((fixedStat % 5) + 5) % 5];
-  return Math.round(raw * 1000) / 1000;
-}
-
-// 對應說明文件 §6、xlsm 正算!B14:F14 / 推算!用不到
-// 注意：目前 .xlsm 公式只判斷「留空」，見上方「已知限制」區塊的說明
-function randomBP(known, mult) {
-  if (known === null || known === undefined || known === '') return 2 * mult;
-  return known * mult;
-}
-
-// 依「選擇寵物 / 手動輸入檔次」模式決定頂檔來源
-function getTops(mode, petName, manualTop) {
-  if (mode === 'manual') return manualTop;
-  if (petName && PET_MAP.has(petName)) return PET_MAP.get(petName);
-  return [0, 0, 0, 0, 0];
-}
-
-function num(v, fallback) {
-  if (v === '' || v === null || v === undefined) return fallback;
-  const n = parseFloat(v);
-  return isNaN(n) ? fallback : n;
-}
-
-// 對應說明文件 §8.1、§4：由自然BP與可配點數 P 算爆點上限、有效配點、最終BP、七維
-function allocateAndStats(nat, alloc, P) {
-  const sumNat = nat.reduce((a, b) => a + b, 0);
-  const cap = nat.map(n => Math.min(P, Math.max(0, Math.floor((sumNat - 2 * n + P) / 2))));
-  const eff = alloc.map((a, i) => Math.min(a, cap[i]));
-  const leftover = alloc.map((a, i) => a - eff[i]);
-  const finalBP = nat.map((n, i) => n + eff[i]);
-  const stats = {};
-  for (const name in COEFF) {
-    const [c1, c2, c3, c4, c5, base] = COEFF[name];
-    const coeffs = [c1, c2, c3, c4, c5];
-    let v = base;
-    for (let i = 0; i < 5; i++) v += coeffs[i] * finalBP[i];
-    stats[name] = Math.floor(v);
-  }
-  return { cap, eff, leftover, finalBP, stats };
-}
-
-// 對應說明文件 §1、§8、§14.1：正算
-function computeForward(state) {
-  const { tops, drops, mult, lv, alloc, rand } = state;
-  const fixed = [], growth = [], rnd = [], nat = [];
-  for (let i = 0; i < 5; i++) {
-    const f = tops[i] - drops[i];
-    const g = growthPerLevel(f);
-    const r = randomBP(rand[i], mult);
-    fixed.push(f); growth.push(g); rnd.push(r);
-    nat.push(f * mult + g * (lv - 1) + r);
-  }
-  const res = allocateAndStats(nat, alloc, lv - 1);
-  const panelBP = fixed.map((f, i) => Math.round(f * mult + growth[i] * (lv - 1) + res.eff[i]));
-  return { fixed, growth, rnd, nat, panelBP, ...res };
-}
-
-// 非1級：以現在的BP為底往上推，倍率、隨機檔、起始等級前的配點都已包含在現在的BP裡
-// 起始等級填1、現在的BP填1等BP時，結果與正算相同
-function computeNonlv1(state) {
-  const { tops, drops, now, startLv, lv, alloc } = state;
-  const span = lv - startLv;
-  const fixed = [], growth = [], nat = [];
-  for (let i = 0; i < 5; i++) {
-    const f = tops[i] - drops[i];
-    const g = growthPerLevel(f);
-    fixed.push(f); growth.push(g);
-    nat.push(now[i] + g * span);
-  }
-  return { fixed, growth, nat, ...allocateAndStats(nat, alloc, span) };
-}
-
-// 對應說明文件 §7、§14.2：推算（算隨機檔）
-function computeReverse(state) {
-  const { tops, drops, mult, lv, alloc, measured } = state;
-  const fixed = [], growth = [], predicted = [], residual = [], inferred = [];
-  for (let i = 0; i < 5; i++) {
-    const f = tops[i] - drops[i];
-    const g = growthPerLevel(f);
-    const pred = f * mult + g * (lv - 1) + alloc[i];
-    const res = measured[i] - pred;
-    fixed.push(f); growth.push(g); predicted.push(pred); residual.push(res);
-    inferred.push(res / mult);
-  }
-  const sum = inferred.reduce((a, b) => a + b, 0);
-  const hasNegative = inferred.some(v => v < -0.001);
-  return { fixed, growth, predicted, residual, inferred, sum, hasNegative };
-}
-
-// ---------- DOM 綁定 ----------
-const LABELS = ['體', '力', '強', '速', '魔'];
-let lastForward = null;
-
-function buildInputRow(containerId, prefix, label, defaults, step) {
-  const el = document.getElementById(containerId);
-  const cells = LABELS.map((l, i) =>
-    `<td><input type="number" ${step ? `step="${step}"` : ''} id="${prefix}-${i}" value="${defaults[i]}"></td>`
-  ).join('');
-  el.innerHTML = `<td class="row-label">${label}</td>${cells}`;
-}
-
-// 配點策略列：label 格放「混點」，後面五格對齊 體力強速魔
-function buildStrategyRow(rowId, prefix) {
-  const cells = LABELS.map((l, i) =>
-    `<td class="strat"><input type="radio" name="${prefix}-strat" value="${i}" aria-label="全配${l}"></td>`
-  ).join('');
-  document.getElementById(rowId).innerHTML =
-    `<td class="row-label"><label class="strat-mix"><input type="radio" name="${prefix}-strat" value="mix" checked>混點</label></td>${cells}`;
-}
-
-buildInputRow('fwd-top', 'fwd-top', '手動輸入檔次<span class="row-hint">直接填五圍檔位</span>', [0,0,0,0,0]);
-buildInputRow('fwd-drop', 'fwd-drop', '掉檔<span class="row-hint">0~4</span>', [0,0,0,0,0]);
-buildStrategyRow('fwd-strat', 'fwd');
-buildInputRow('fwd-alloc', 'fwd-alloc', '升級配點分配<span class="row-hint" id="fwd-alloc-hint"></span>', [0,0,0,0,0]);
-buildInputRow('fwd-rand', 'fwd-rand', '已知隨機檔<span class="row-hint">留空＝平均值 2×倍率</span>', ['','','','','']);
-buildInputRow('rev-top', 'rev-top', '手動輸入檔次<span class="row-hint">直接填五圍檔位</span>', [0,0,0,0,0]);
-buildInputRow('rev-drop', 'rev-drop', '掉檔<span class="row-hint">0~4</span>', [0,0,0,0,0]);
-buildInputRow('rev-alloc', 'rev-alloc', '配點', [0,0,0,0,0]);
-buildInputRow('rev-measured', 'rev-measured', '論壇寵物實際BP<span class="row-hint">含小數</span>', ['','','','','' ], '0.01');
-buildInputRow('nl1-drop', 'nl1-drop', '掉檔<span class="row-hint">0~4</span>', [0,0,0,0,0]);
-buildInputRow('nl1-now', 'nl1-now', '現在的BP<span class="row-hint">起始等級時的BP，含小數</span>', ['','','','',''], '0.01');
-buildStrategyRow('nl1-strat', 'nl1');
-buildInputRow('nl1-alloc', 'nl1-alloc', '配點<span class="row-hint" id="nl1-alloc-hint"></span>', [0,0,0,0,0]);
-
-// datalist 選項（一次塞完，2500+ 筆）
-const petOptionsHtml = Array.from(PET_MAP.keys()).map(n => `<option value="${n}">`).join('');
-document.getElementById('pet-list-fwd').innerHTML = petOptionsHtml;
-document.getElementById('pet-list-rev').innerHTML = petOptionsHtml;
-document.getElementById('pet-list-nl1').innerHTML = petOptionsHtml;
-
-// ---------- 輸入模式（選擇寵物 / 手動輸入檔次）----------
-function getMode(prefix) {
-  const el = document.querySelector(`input[name="${prefix}-mode"]:checked`);
-  return el ? el.value : 'pet';
-}
-
-function applyMode(prefix) {
-  const mode = getMode(prefix);
-  document.getElementById(`${prefix}-pet-field`).hidden = (mode !== 'pet');
-  document.getElementById(`${prefix}-top`).hidden = (mode !== 'manual');
-}
-
-function showPetWarn(prefix, mode, petName) {
-  const el = document.getElementById(`${prefix}-pet-warn`);
-  el.textContent = (mode === 'pet' && petName && !PET_MAP.has(petName))
-    ? '查無此寵物，請改用手動輸入檔次' : '';
-}
-
-function readFive(prefix, fallback) {
-  return LABELS.map((_, i) => num(document.getElementById(`${prefix}-${i}`).value, fallback));
-}
-function readFiveRaw(prefix) {
-  return LABELS.map((_, i) => {
-    const v = document.getElementById(`${prefix}-${i}`).value;
-    return v === '' ? '' : v;
-  });
-}
-
-// ---------- 配點策略 ----------
-const autoAlloc = { fwd: false, nl1: false };   // 值是策略自動填的、還沒被手動改過
-
-function readForwardState() {
-  const mode = getMode('fwd');
-  const petName = document.getElementById('fwd-pet').value.trim();
-  return {
-    mode, petName,
-    tops: getTops(mode, petName, readFive('fwd-top', 0)),
-    drops: readFive('fwd-drop', 0),
-    alloc: readFive('fwd-alloc', 0),
-    mult: num(document.getElementById('fwd-mult').value, 0.2),
-    lv: num(document.getElementById('fwd-lv').value, 145),
-    rand: readFiveRaw('fwd-rand').map(v => v === '' ? null : parseFloat(v))
-  };
-}
-
-function getStrategy(prefix) {
-  const el = document.querySelector(`input[name="${prefix}-strat"]:checked`);
-  return el ? el.value : 'mix';
-}
-
-function setAllocLock(prefix, locked) {
-  LABELS.forEach((_, i) => { document.getElementById(`${prefix}-alloc-${i}`).readOnly = locked; });
-}
-
-// 先照總點數配滿，爆掉的部分交給 render 函式最後回滾
-function refillAlloc(prefix, P) {
-  const s = getStrategy(prefix);
-  autoAlloc[prefix] = (s !== 'mix');
-  if (!autoAlloc[prefix]) return;
-  P = Math.max(0, P);
-  LABELS.forEach((_, i) => { document.getElementById(`${prefix}-alloc-${i}`).value = (i === +s) ? P : 0; });
-}
-
-function renderForward() {
-  const st = readForwardState();
-  const { mode, petName, tops, drops, lv } = st;
-  showPetWarn('fwd', mode, petName);
-
-  let r = computeForward(st);
-
-  // 回滾：所有判定跑完之後，把配不進去的點從輸入格退掉，後面畫面一律用退過的值
-  const rolled = r.eff.map(v => Math.max(0, v));
-  if (rolled.some((v, i) => v !== st.alloc[i])) {
-    rolled.forEach((v, i) => { document.getElementById(`fwd-alloc-${i}`).value = v; });
-    st.alloc = rolled;
-    r = computeForward(st);
-  }
-  const alloc = st.alloc;
-
-  // 回滾之後填的值就是吃得進去的值，剩餘為正＝還沒配完（含被退回來的），為負＝五項合計超過總點數
-  const P = Math.max(0, lv - 1);
-  const rest = P - alloc.reduce((a, b) => a + b, 0);
-  const over = -rest;
-  setAllocLock('fwd', autoAlloc.fwd && rest === 0);
-
-  const hint = document.getElementById('fwd-alloc-hint');
-  hint.textContent = over > 0 ? `可配 ${P} 點・超出 ${over} 點`
-                   : rest > 0 ? `可配 ${P} 點・剩餘 ${rest} 點`
-                              : `可配 ${P} 點・已配完`;
-  hint.classList.toggle('neg', over > 0 || rest > 0);
-
-  const cells = vals => vals.map(v => `<td>${v}</td>`).join('');
-
-  document.getElementById('fwd-result').innerHTML =
-    `<tr class="emph"><td class="row-label">精確BP</td>${cells(r.finalBP.map(v => v.toFixed(2)))}</tr>`;
-
-  const detailRows = [
-    ['頂檔', tops],
-    ['固定檔', r.fixed],
-    ['成長', r.growth],
-    ['隨機檔BP', r.rnd.map(v => v.toFixed(2))],
-    ['自然BP', r.nat.map(v => v.toFixed(2))],
-    ['可加上限', r.cap],
-    ['有效配點', r.eff],
-    ['可重配點', r.leftover.map((v, i) => `<span class="${v > 0 ? 'neg' : ''}">${v}</span>`)],
-    ['面板BP', r.panelBP]
-  ];
-  document.getElementById('fwd-detail').innerHTML = detailRows.map(([name, vals]) =>
-    `<tr><td class="row-label">${name}</td>${cells(vals)}</tr>`
-  ).join('');
-
-  const statsEl = document.getElementById('fwd-stats');
-  statsEl.innerHTML = Object.entries(r.stats).map(([name, v]) =>
-    `<div class="stat-box"><div class="label">${name}</div><div class="value">${v}</div></div>`
-  ).join('');
-
-  lastForward = {
-    pet: mode === 'manual' ? `（手動 ${tops.join('/')}）` : (petName || '—'),
-    dan: drops.join(''),
-    lv: lv,
-    alloc: alloc.slice(),
-    stats: r.stats,
-    bp: r.finalBP
-  };
-}
-
-function renderReverse() {
-  const mode = getMode('rev');
-  const petName = document.getElementById('rev-pet').value.trim();
-  const manualTop = readFive('rev-top', 0);
-  const tops = getTops(mode, petName, manualTop);
-  showPetWarn('rev', mode, petName);
-  const drops = readFive('rev-drop', 0);
-  const alloc = readFive('rev-alloc', 0);
-  const mult = num(document.getElementById('rev-mult').value, 0.2);
-  const lv = num(document.getElementById('rev-lv').value, 145);
-  const measured = readFive('rev-measured', 0);
-
-  const r = computeReverse({ tops, drops, mult, lv, alloc, measured });
-
-  const banner = document.getElementById('rev-banner');
-  const sumTxt = `五項反推隨機檔合計：${r.sum.toFixed(2)}（應接近 10）`;
-  if (r.hasNegative) {
-    banner.className = 'banner warn';
-    banner.textContent = sumTxt + '・出現負值，掉檔或配點可能有誤，請換一組重試';
-  } else if (Math.abs(r.sum - 10) > 1) {
-    banner.className = 'banner warn';
-    banner.textContent = sumTxt + '・偏離 10 較多，建議重新檢查輸入';
-  } else {
-    banner.className = 'banner ok';
-    banner.textContent = sumTxt;
-  }
-
-  const cells = vals => vals.map(v => `<td>${v}</td>`).join('');
-
-  document.getElementById('rev-result').innerHTML =
-    `<tr class="emph"><td class="row-label">反推隨機檔</td>${
-      cells(r.inferred.map((v, i) => `<span class="${v < -0.001 ? 'neg' : ''}">${v.toFixed(2)}</span>`))
-    }</tr>`;
-
-  const detailRows = [
-    ['頂檔', tops],
-    ['固定檔', r.fixed],
-    ['成長', r.growth],
-    ['預測BP（不含隨機）', r.predicted.map(v => v.toFixed(2))],
-    ['殘差', r.residual.map((v, i) => `<span class="${v < 0 ? 'neg' : ''}">${v.toFixed(2)}</span>`)]
-  ];
-  document.getElementById('rev-detail').innerHTML = detailRows.map(([name, vals]) =>
-    `<tr><td class="row-label">${name}</td>${cells(vals)}</tr>`
-  ).join('');
-}
-
-// ---------- 非1級寵計算 ----------
-function readNonlv1State() {
-  const petName = document.getElementById('nl1-pet').value.trim();
-  return {
-    petName,
-    tops: getTops('pet', petName, [0, 0, 0, 0, 0]),
-    drops: readFive('nl1-drop', 0),
-    now: readFive('nl1-now', NaN),
-    alloc: readFive('nl1-alloc', 0),
-    startLv: num(document.getElementById('nl1-start').value, 1),
-    lv: num(document.getElementById('nl1-lv').value, 145)
-  };
-}
-
-function refillAllocNl1() {
-  const { lv, startLv } = readNonlv1State();
-  refillAlloc('nl1', lv - startLv);
-}
-
-function renderNonlv1() {
-  const st = readNonlv1State();
-  const { petName, tops, lv, startLv } = st;
-  document.getElementById('nl1-pet-warn').textContent =
-    (petName && !PET_MAP.has(petName)) ? '查無此寵物' : '';
-
-  const P = Math.max(0, lv - startLv);
-  const hint = document.getElementById('nl1-alloc-hint');
-  const banner = document.getElementById('nl1-banner');
-  const msg = !PET_MAP.has(petName) ? '先選寵物（每級成長要看檔次）'
-            : st.now.some(Number.isNaN) ? '填入五項現在的BP才會計算'
-            : lv < startLv ? '目標等級不能低於起始等級' : '';
-  banner.hidden = !msg;
-  banner.textContent = msg;
-  if (msg) {
-    hint.textContent = `可配 ${P} 點`;
-    hint.classList.remove('neg');
-    ['nl1-result', 'nl1-detail', 'nl1-stats'].forEach(id => { document.getElementById(id).innerHTML = ''; });
-    return;
-  }
-
-  let r = computeNonlv1(st);
-
-  // 回滾邏輯跟正算一致：配不進去的點從輸入格退掉
-  const rolled = r.eff.map(v => Math.max(0, v));
-  if (rolled.some((v, i) => v !== st.alloc[i])) {
-    rolled.forEach((v, i) => { document.getElementById(`nl1-alloc-${i}`).value = v; });
-    st.alloc = rolled;
-    r = computeNonlv1(st);
-  }
-  const alloc = st.alloc;
-
-  const rest = P - alloc.reduce((a, b) => a + b, 0);
-  const over = -rest;
-  setAllocLock('nl1', autoAlloc.nl1 && rest === 0);
-
-  hint.textContent = over > 0 ? `可配 ${P} 點・超出 ${over} 點`
-                   : rest > 0 ? `可配 ${P} 點・剩餘 ${rest} 點`
-                              : `可配 ${P} 點・已配完`;
-  hint.classList.toggle('neg', over > 0 || rest > 0);
-
-  const cells = vals => vals.map(v => `<td>${v}</td>`).join('');
-
-  document.getElementById('nl1-result').innerHTML =
-    `<tr class="emph"><td class="row-label">精確BP</td>${cells(r.finalBP.map(v => v.toFixed(2)))}</tr>`;
-
-  const detailRows = [
-    ['頂檔', tops],
-    ['固定檔', r.fixed],
-    ['成長', r.growth],
-    ['現在的BP', st.now.map(v => v.toFixed(2))],
-    ['自然BP', r.nat.map(v => v.toFixed(2))],
-    ['可加上限', r.cap],
-    ['有效配點', r.eff],
-    ['可重配點', r.leftover.map((v, i) => `<span class="${v > 0 ? 'neg' : ''}">${v}</span>`)]
-  ];
-  document.getElementById('nl1-detail').innerHTML = detailRows.map(([name, vals]) =>
-    `<tr><td class="row-label">${name}</td>${cells(vals)}</tr>`
-  ).join('');
-
-  const statsEl = document.getElementById('nl1-stats');
-  statsEl.innerHTML = Object.entries(r.stats).map(([name, v]) =>
-    `<div class="stat-box"><div class="label">${name}</div><div class="value">${v}</div></div>`
-  ).join('');
-}
-
-// ---------- 主題切換 ----------
-const THEME_KEY = 'moli-calc-theme';
-
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-app-theme', t);
-  const btn = document.getElementById('theme-toggle');
-  btn.textContent = (t === 'dark') ? '切換明亮' : '切換暗色';
-  btn.setAttribute('aria-label', btn.textContent + '主題');
-}
-
-let theme = 'light';
-try { theme = localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { theme = 'light'; }
-
-document.getElementById('theme-toggle').addEventListener('click', () => {
-  theme = (theme === 'dark') ? 'light' : 'dark';
-  try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* 無法保存時仍可切換 */ }
-  applyTheme(theme);
-});
-
-// ---------- 紀錄 ----------
-const REC_KEY = 'moli-calc-records-v1';
-const STAT_ORDER = ['生命', '魔力', '攻擊', '防禦', '敏捷', '精神', '回復'];
-let records = [];
-
-function allocHint(alloc) {
-  if (!alloc) return '';
-  return LABELS.map((l, i) => alloc[i] > 0 ? `${l}${alloc[i]}` : null).filter(Boolean).join('／');
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-function loadRecords() {
-  try {
-    const raw = localStorage.getItem(REC_KEY);
-    records = raw ? (JSON.parse(raw) || []) : [];
-  } catch (e) {
-    records = [];
-  }
-}
-
-function saveRecords() {
-  try { localStorage.setItem(REC_KEY, JSON.stringify(records)); } catch (e) { /* 無法保存時仍可用當次 session */ }
-}
-
-function renderRecords() {
-  const tbody = document.querySelector('#rec-table tbody');
-  const note = document.getElementById('rec-note');
-  if (!records.length) {
-    tbody.innerHTML = '<tr><td class="empty" colspan="16">尚無紀錄。調好參數後按「加入紀錄」，把這組結果留下來比較。</td></tr>';
-    note.textContent = '';
-    return;
-  }
-  tbody.innerHTML = records.map((rec, i) => `<tr>
-    <td><button type="button" class="rec-del" data-idx="${i}" title="刪除這筆" aria-label="刪除這筆紀錄">✕</button></td>
-    <td>${escapeHtml(rec.pet)}${rec.alloc ? `<span class="row-hint">${allocHint(rec.alloc)}</span>` : ''}</td>
-    <td>${escapeHtml(rec.dan)}</td>
-    <td>${rec.lv}</td>
-    ${STAT_ORDER.map(k => `<td>${rec.stats[k]}</td>`).join('')}
-    ${rec.bp.map(v => `<td>${Number(v).toFixed(2)}</td>`).join('')}
-  </tr>`).join('');
-  note.textContent = `共 ${records.length} 筆・存在這台電腦的瀏覽器，換裝置或清除瀏覽資料就會消失。`;
-}
-
-document.querySelector('#rec-table tbody').addEventListener('click', (e) => {
-  const btn = e.target.closest('.rec-del');
-  if (!btn) return;
-  const idx = Number(btn.dataset.idx);
-  if (Number.isNaN(idx)) return;
-  records.splice(idx, 1);
-  saveRecords();
-  renderRecords();
-});
-
-function recordsToTsv() {
-  const head = ['寵物', '檔次', 'Lv'].concat(STAT_ORDER).concat(LABELS);
-  const rows = records.map(rec =>
-    [rec.pet, rec.dan, rec.lv]
-      .concat(STAT_ORDER.map(k => rec.stats[k]))
-      .concat(rec.bp.map(v => Number(v).toFixed(2)))
-  );
-  return [head].concat(rows).map(r => r.join('\t')).join('\n');
-}
-
-function flash(btn, text, ms) {
-  const old = btn.textContent;
-  btn.textContent = text;
-  setTimeout(() => { btn.textContent = old; }, ms || 1600);
-}
-
-document.getElementById('rec-add').addEventListener('click', () => {
-  if (!lastForward) return;
-  records.push(JSON.parse(JSON.stringify(lastForward)));
-  saveRecords();
-  renderRecords();
-});
-
-document.getElementById('rec-copy').addEventListener('click', (e) => {
-  const btn = e.currentTarget;
-  if (!records.length) { flash(btn, '沒有紀錄'); return; }
-  const tsv = recordsToTsv();
-  const fallback = () => {
-    const ta = document.createElement('textarea');
-    ta.value = tsv;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
-    document.body.removeChild(ta);
-    flash(btn, ok ? '已複製' : '複製失敗');
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(tsv).then(() => flash(btn, '已複製')).catch(fallback);
-  } else {
-    fallback();
-  }
-});
-
-let clearArmed = false;
-let clearTimer = null;
-document.getElementById('rec-clear').addEventListener('click', (e) => {
-  const btn = e.currentTarget;
-  if (!records.length) { flash(btn, '沒有紀錄'); return; }
-  if (!clearArmed) {
-    clearArmed = true;
-    btn.textContent = '再按一次確認';
-    clearTimer = setTimeout(() => { clearArmed = false; btn.textContent = '清空紀錄'; }, 4000);
-    return;
-  }
-  clearTimeout(clearTimer);
-  clearArmed = false;
-  btn.textContent = '清空紀錄';
-  records = [];
-  saveRecords();
-  renderRecords();
-});
-
-// ---------- 事件綁定 ----------
-// 手動改過就脫離自動模式，不再自動鎖回唯讀；要回自動值就重點一次策略
-LABELS.forEach((_, i) => document.getElementById(`fwd-alloc-${i}`).addEventListener('input', () => { autoAlloc.fwd = false; }));
-document.querySelectorAll('#panel-forward input').forEach(el => el.addEventListener('input', renderForward));
-document.querySelectorAll('#panel-forward select').forEach(el => el.addEventListener('change', renderForward));
-document.querySelectorAll('input[name="fwd-mode"]').forEach(el => el.addEventListener('change', () => { applyMode('fwd'); renderForward(); }));
-// 用 click 不用 change：手動改過之後再點一次同一個策略要能重填
-document.querySelectorAll('input[name="fwd-strat"]').forEach(el => el.addEventListener('click', () => { refillAlloc('fwd', num(document.getElementById('fwd-lv').value, 145) - 1); renderForward(); }));
-document.getElementById('fwd-lv').addEventListener('input', () => { if (getStrategy('fwd') !== 'mix') { refillAlloc('fwd', num(document.getElementById('fwd-lv').value, 145) - 1); renderForward(); } });
-document.querySelectorAll('input[name="rev-mode"]').forEach(el => el.addEventListener('change', () => { applyMode('rev'); renderReverse(); }));
-document.querySelectorAll('#panel-reverse input').forEach(el => el.addEventListener('input', renderReverse));
-document.querySelectorAll('#panel-reverse select').forEach(el => el.addEventListener('change', renderReverse));
-
-LABELS.forEach((_, i) => document.getElementById(`nl1-alloc-${i}`).addEventListener('input', () => { autoAlloc.nl1 = false; }));
-document.querySelectorAll('#panel-nonlv1 input').forEach(el => el.addEventListener('input', renderNonlv1));
-document.querySelectorAll('input[name="nl1-strat"]').forEach(el => el.addEventListener('click', () => { refillAllocNl1(); renderNonlv1(); }));
-['nl1-lv', 'nl1-start'].forEach(id => document.getElementById(id).addEventListener('input', () => { if (getStrategy('nl1') !== 'mix') { refillAllocNl1(); renderNonlv1(); } }));
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-  });
-});
-
-applyTheme(theme);
-applyMode('fwd');
-applyMode('rev');
-renderForward();
-renderReverse();
-renderNonlv1();
-loadRecords();
-renderRecords();
-</script>
+<script src="calc.js"></script>
+<script src="common.js"></script>
+<script src="forward.js"></script>
+<script src="reverse.js"></script>
+<script src="nonlv1.js"></script>
 
 </body>
 </html>
