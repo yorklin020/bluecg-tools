@@ -28,9 +28,10 @@
   </header>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="forward">正算</button>
-    <button class="tab-btn" data-tab="reverse">推算（算隨機檔）</button>
-    <button class="tab-btn" data-tab="nonlv1">非1級寵計算</button>
+    <button class="tab-btn active" data-tab="forward">模擬成長</button>
+    <button class="tab-btn" data-tab="nonlv1">非1級寵模擬</button>
+    <button class="tab-btn" data-tab="stats">算掉檔</button>
+    <button class="tab-btn" data-tab="reverse">算隨機檔</button>
   </div>
 
   <!-- ============ 正算 ============ -->
@@ -182,7 +183,7 @@
       <div class="card">
         <div class="card-head">
           <h2>反推結果</h2>
-          <button type="button" class="btn" id="rev-to-fwd">帶入正算</button>
+          <button type="button" class="btn" id="rev-to-fwd">帶入模擬成長</button>
         </div>
         <div class="banner" id="rev-banner"></div>
         <div class="table-scroll">
@@ -341,6 +342,81 @@
       </div>
     </div>
   </div>
+
+  <!-- ============ 七圍反推掉檔 ============ -->
+  <div class="panel" id="panel-stats">
+    <div class="two-col">
+      <div class="col-left">
+      <div class="card">
+        <h2>輸入</h2>
+        <div class="mode-row">
+          <label class="radio"><input type="radio" name="sta-mode" value="pet" checked>選擇寵物</label>
+          <label class="radio"><input type="radio" name="sta-mode" value="manual">手動輸入檔次</label>
+        </div>
+        <div class="row-top">
+          <div class="field" id="sta-pet-field">
+            <label>選擇寵物（可打字搜尋）</label>
+            <input list="pet-list-sta" id="sta-pet" placeholder="輸入寵物名稱…">
+            <datalist id="pet-list-sta"></datalist>
+            <span class="field-warn" id="sta-pet-warn"></span>
+          </div>
+          <div class="field" style="max-width:120px;">
+            <label>倍率</label>
+            <select id="sta-mult">
+              <option value="0.2" selected>0.2</option>
+              <option value="0.25">0.25</option>
+              <option value="0.3">0.3</option>
+              <option value="0.5">0.5</option>
+              <option value="0.6">0.6</option>
+              <option value="0.7">0.7</option>
+            </select>
+          </div>
+          <div class="field" style="max-width:100px;">
+            <label>等級 Lv</label>
+            <input type="number" id="sta-lv" value="1">
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="stat-table">
+            <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
+            <tbody>
+              <tr id="sta-top"></tr>
+              <tr id="sta-alloc"></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="stats-grid" id="sta-stats"></div>
+        <button type="button" class="btn primary" id="sta-run">開始反推</button>
+      </div>
+      </div>
+      <div class="col-right">
+      <div class="card">
+        <h2>各項掉檔可能</h2>
+        <div class="banner" id="sta-banner"></div>
+        <div class="table-scroll">
+          <table class="stat-table">
+            <thead><tr><th></th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th></tr></thead>
+            <tbody id="sta-dist"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="sta-total"></p>
+        <p class="hint">窮舉每項掉 0~4 檔與隨機檔（合計 10）的所有組合，逐組正算七圍跟輸入比對；百分比是最吻合那批組合裡各掉幾檔的比例。1 級寵每掉 1 檔跟少 1 點隨機檔分不開，大多只看得出總掉檔；等級越高越能分出各項。配點要填實際配的。</p>
+      </div>
+
+      <div class="card">
+        <h2>候選組合（前 30 名）</h2>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>誤差</th><th>體</th><th>力</th><th>強</th><th>速</th><th>魔</th><th>總掉</th><th>隨機檔</th></tr></thead>
+            <tbody id="sta-list"></tbody>
+          </table>
+        </div>
+        <p class="hint">誤差＝七項素質跟輸入差幾點的合計，0 為完全吻合；隨機檔是該組掉檔下最吻合的一種分配。</p>
+      </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="pet-db.js"></script>
@@ -349,6 +425,7 @@
 <script src="forward.js"></script>
 <script src="reverse.js"></script>
 <script src="nonlv1.js"></script>
+<script src="stats.js"></script>
 
 </body>
 </html>

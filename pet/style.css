@@ -52,7 +52,8 @@ body{
 }
 .col-left,.col-right{display:flex;flex-direction:column;gap:18px;min-width:0;}
 .col-left .row-top{gap:10px;}
-.col-left #fwd-pet-field, .col-left #rev-pet-field{flex-basis:100%;}
+.col-left #fwd-pet-field, .col-left #rev-pet-field, .col-left #sta-pet-field{flex-basis:100%;}
+#sta-stats{margin:14px 0;}
 .col-left{position:sticky;top:16px;}
 .two-col .card{margin-bottom:0;}
 @media (max-width:900px){

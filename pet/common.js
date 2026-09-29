@@ -31,6 +31,7 @@ document.getElementById('pet-list-fwd').innerHTML = petOptionsHtml;
 document.getElementById('pet-list-rev').innerHTML = petOptionsHtml;
 document.getElementById('pet-list-nl1').innerHTML = petOptionsHtml;
 document.getElementById('pet-list-ini').innerHTML = petOptionsHtml;
+document.getElementById('pet-list-sta').innerHTML = petOptionsHtml;
 
 // ---------- 輸入模式（選擇寵物 / 手動輸入檔次）----------
 function getMode(prefix) {

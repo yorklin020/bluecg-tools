@@ -119,3 +119,45 @@ function computeReverse(state) {
   const hasNegative = inferred.some(v => v < -0.001);
   return { fixed, growth, predicted, residual, inferred, sum, hasNegative };
 }
+
+// 七圍反推掉檔：窮舉掉檔 0~4 與隨機檔（合計 10）的所有組合，回傳每組掉檔的最小七圍誤差
+function computeDropSearch(state) {
+  const { tops, mult, lv, alloc, stats } = state;
+  const coeffs = Object.values(COEFF);
+  const rands = [];
+  for (let a = 0; a <= 10; a++)
+    for (let b = 0; a + b <= 10; b++)
+      for (let c = 0; a + b + c <= 10; c++)
+        for (let d = 0; a + b + c + d <= 10; d++) rands.push([a, b, c, d, 10 - a - b - c - d]);
+
+  // term[s][i][drop][rand]：第 s 項七圍中第 i 項BP的貢獻，運算順序跟 computeForward、statsFromBP 一致
+  const term = coeffs.map(co => tops.map((t, i) => [0, 1, 2, 3, 4].map(dr => {
+    const f = t - dr;
+    const g = growthPerLevel(f);
+    return Array.from({ length: 11 }, (_, r) => co[i] * ((f * mult + g * (lv - 1) + r * mult) + alloc[i]));
+  })));
+  const base = coeffs.map(co => co[5]);
+
+  const results = [];
+  const dv = [0, 0, 0, 0, 0];
+  for (let code = 0; code < 3125; code++) {
+    let x = code;
+    for (let i = 0; i < 5; i++) { dv[i] = x % 5; x = (x - dv[i]) / 5; }
+    if (tops.some((t, i) => t - dv[i] < 0)) continue;
+    const T = term.map(ts => ts.map((ti, i) => ti[dv[i]]));
+    let best = Infinity, bestR = null;
+    for (const r of rands) {
+      let err = 0;
+      for (let s = 0; s < 7 && err < best; s++) {
+        const Ts = T[s];
+        let v = base[s];
+        v += Ts[0][r[0]]; v += Ts[1][r[1]]; v += Ts[2][r[2]]; v += Ts[3][r[3]]; v += Ts[4][r[4]];
+        err += Math.abs(Math.floor(v) - stats[s]);
+      }
+      if (err < best) { best = err; bestR = r; }
+    }
+    results.push({ drops: dv.slice(), rand: bestR, err: best, total: dv.reduce((a, b) => a + b, 0) });
+  }
+  results.sort((a, b) => a.err - b.err || a.total - b.total);
+  return { results, minErr: results.length ? results[0].err : Infinity };
+}
