@@ -256,11 +256,11 @@
     <p>不用一個一個打字。在<b>已登入的帳號管理頁</b>按 <kbd>F12</kbd> 開開發者工具，切到 <b>Console</b> 分頁，貼上這行按 <kbd>Enter</kbd>，目前的分組與帳號就進剪貼簿了：</p>
     <div class="code-box wrap-code">
       <button type="button" class="copy-btn">複製</button>
-      <pre><code>copy([...document.querySelectorAll('ul[id^="category_"]')].map(ul=>{const zu=ul.id.slice(9);const a=[...ul.querySelectorAll('a.zhanghao-link')].map(x=>new URL(x.href).searchParams.get('ID'));const g=ul.querySelector('a[id$="帳號"]');return a.length?`# 分組 ${zu} ${g?g.id.split('_').pop():''}（${a.length}）\n`+a.join('\n'):''}).filter(Boolean).join('\n\n'))</code></pre>
+      <pre><code>(()=>{const t=[...document.querySelectorAll('ul[id^="category_"]')].map(ul=>{const zu=ul.id.slice(9);const a=[...ul.querySelectorAll('a.zhanghao-link')].map(x=>new URL(x.href).searchParams.get('ID'));const g=ul.querySelector('a[id$="帳號"]');return a.length?`# 分組 ${zu} ${g?g.id.split('_').pop():''}（${a.length}）\n`+a.join('\n'):''}).filter(Boolean).join('\n\n');if(!t)return'⚠ 沒抓到帳號：請在「已登入的帳號管理頁」執行';copy(t);const n=t.match(/^# /gm).length;return`✅ 已複製 ${n} 組、${t.split('\n').filter(l=>/^[^#]/.test(l)).length} 個帳號到剪貼簿，回工具頁步驟 2 貼上`+(n===1?'\n只有一組？切到其他分組再各跑一次':'')})()</code></pre>
     </div>
     <ul>
       <li>第一次貼會被 Chrome 擋住，畫面會要你先手動打 <code>allow pasting</code> 按 Enter，打完就能貼了。</li>
-      <li>執行後只回一行 <code>undefined</code> 是<b>正常的</b>，<code>copy()</code> 本來就不回傳值，清單已經在剪貼簿裡。</li>
+      <li>執行後 Console 會回一行結果：<code>✅ 已複製 N 組、N 個帳號</code> 就是成功；出現 <code>⚠</code> 代表沒抓到，剪貼簿不會被動到。</li>
       <li>只印出一組的話，就是網頁只把展開的那組放進畫面，切到其他分組再各跑一次。</li>
     </ul>
     <p>這步只是方便你知道自己有哪些帳號。已經有清單的話可以直接跳到步驟 2。</p>
