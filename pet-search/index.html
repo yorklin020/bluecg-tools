@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寵物圖鑑查詢</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* 明亮（預設）—— 與各工具共用同一組色票 */
+  :root{
+    --bg:#f4f0f9;
+    --panel:#ffffff;
+    --panel-2:#f2edf9;
+    --line:#dcd2ea;
+    --text:#2a2140;
+    --muted:#6a5f85;
+    --gold:#8f6510;
+    --gold-hover:#7a550a;
+    --on-gold:#ffffff;
+    --earth:#3f7a1f;
+    --water:#1f5fbf;
+    --fire:#c0392b;
+    --wind:#b0700a;
+    --shadow:0 1px 2px rgba(42,33,64,.07);
+    --mono:'JetBrains Mono', monospace;
+  }
+  :root[data-app-theme="dark"]{
+    --bg:#211a2e;
+    --panel:#2b2240;
+    --panel-2:#332950;
+    --line:#473a63;
+    --text:#f1ecf7;
+    --muted:#a99dc4;
+    --gold:#e0b74c;
+    --gold-hover:#eec765;
+    --on-gold:#211a2e;
+    --earth:#8fd16a;
+    --water:#7fb2ff;
+    --fire:#f0806a;
+    --wind:#f2c45a;
+    --shadow:none;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans TC', system-ui, sans-serif;
+    line-height:1.55;
+    padding:20px 14px 60px;
+  }
+  .wrap{max-width:1280px;margin:0 auto;}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  header h1{
+    font-family:'Noto Serif TC', serif;
+    font-size:1.6rem;margin:0 0 4px;
+    color:var(--gold);letter-spacing:.02em;
+  }
+  header p{margin:0;color:var(--muted);font-size:.88rem;}
+  .h1-note{font-family:'Noto Sans TC',sans-serif;font-size:.9rem;font-weight:500;color:var(--muted);margin-left:4px;}
+  .back-link{display:inline-block;margin-bottom:6px;color:var(--muted);text-decoration:none;font-size:.8rem;}
+  .back-link:hover{color:var(--gold);}
+  .btn{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    font-family:'Noto Sans TC',sans-serif;font-size:.85rem;
+    border-radius:6px;padding:7px 12px;cursor:pointer;
+  }
+  .btn:hover{border-color:var(--gold);color:var(--gold);}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    padding:16px 18px 18px;
+    margin-bottom:18px;
+  }
+  .card h2{font-size:.95rem;margin:0 0 10px;color:var(--gold);font-weight:700;letter-spacing:.02em;}
+  .group{margin-bottom:14px;}
+  .group:last-child{margin-bottom:0;}
+  .group-title{font-size:.8rem;color:var(--muted);margin-bottom:6px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .group-title label{display:inline-flex;gap:4px;align-items:center;cursor:pointer;}
+  /* 種族、技格按鈕 */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    font-family:inherit;font-size:.85rem;
+    border-radius:999px;padding:4px 12px;cursor:pointer;
+  }
+  .chip sup{color:var(--muted);font-size:.68rem;margin-left:2px;}
+  .chip:hover{border-color:var(--gold);}
+  .chip.on{background:var(--gold);border-color:var(--gold);color:var(--on-gold);}
+  .chip.on sup{color:var(--on-gold);}
+  /* 最低／最高 */
+  .ranges{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 14px;}
+  /* 種族／檔次／屬性／技格四欄並排，每一行高度相同才會對齊 */
+  .split{display:grid;grid-template-columns:repeat(4,auto);justify-content:start;gap:14px 36px;}
+  .split .group-title{min-height:1.6em;}
+  .ranges.list{grid-template-columns:auto;}
+  .ranges.list .range input{width:70px;}
+  .range, .chip{height:32px;}
+  .chips.list{display:grid;grid-template-columns:repeat(2,auto);gap:8px 6px;align-content:start;}
+  .chips.list .chip{text-align:left;}
+  .chips.slots{grid-template-columns:auto;}
+  .chips.slots .chip{text-align:center;min-width:44px;}
+  @media (max-width:800px){ .split{grid-template-columns:repeat(2,auto);} }
+  @media (max-width:560px){
+    .split{grid-template-columns:minmax(0,1fr);}
+    .chips.list{grid-template-columns:repeat(3,1fr);}
+    .chips.slots{display:flex;}
+  }
+  .range{display:flex;align-items:center;gap:6px;font-size:.85rem;}
+  .range .lbl{min-width:2.6em;color:var(--text);}
+  .range input{width:100%;min-width:0;}
+  .range .dash{color:var(--muted);}
+  input[type=number], input[type=text], select{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    font-family:var(--mono);font-size:.85rem;
+    border-radius:6px;padding:5px 8px;
+  }
+  input[type=text]{font-family:'Noto Sans TC',sans-serif;}
+  input:focus, select:focus{outline:none;border-color:var(--gold);}
+  /* 條件卡片只跟內容一樣寬，右邊不留空白 */
+  .filters{width:fit-content;max-width:100%;}
+  .texts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;}
+  @media (max-width:560px){ .texts{grid-template-columns:minmax(0,1fr);} }
+  .texts label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted);}
+  .actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .count{font-size:.9rem;color:var(--muted);}
+  .count b{color:var(--gold);font-family:var(--mono);}
+  /* 結果表格：手機寬度時表格自己左右捲，頁面不捲 */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);max-height:75vh;}
+  table{border-collapse:collapse;width:100%;font-size:.85rem;}
+  th, td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;}
+  th{
+    position:sticky;top:0;z-index:1;
+    background:var(--panel-2);color:var(--gold);
+    font-weight:700;white-space:nowrap;cursor:pointer;user-select:none;
+  }
+  th:hover{color:var(--gold-hover);}
+  th.num{text-align:right;}
+  th .arrow{font-size:.7rem;margin-left:2px;}
+  td.num{font-family:var(--mono);text-align:right;white-space:nowrap;}
+  td.name{white-space:nowrap;font-weight:500;}
+  td.race{white-space:nowrap;}
+  td.note{min-width:8em;color:var(--muted);}
+  .conv{display:block;font-size:.72rem;color:var(--muted);}
+  .el{white-space:nowrap;font-family:var(--mono);margin-right:6px;}
+  .el-地{color:var(--earth);} .el-水{color:var(--water);} .el-火{color:var(--fire);} .el-風{color:var(--wind);}
+  tbody tr:hover{background:var(--panel-2);}
+  .empty{padding:30px;text-align:center;color:var(--muted);}
+</style>
+<script>
+  // 在繪製前套用主題，避免閃一下白底；與各工具共用同一個 key
+  (function(){
+    var t = 'light';
+    try { t = localStorage.getItem('moli-calc-theme') || 'light'; } catch (e) {}
+    document.documentElement.setAttribute('data-app-theme', t);
+  })();
+</script>
+<script src="pet-data.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-head">
+    <header>
+      <a class="back-link" href="../">← 回工具集</a>
+      <h1>寵物圖鑑查詢<small class="h1-note">（資料補齊中）</small></h1>
+      <p id="sub">依種族、檔次、屬性、跑速篩選寵物</p>
+    </header>
+    <button type="button" class="btn" id="theme-toggle">切換暗色</button>
+  </div>
+
+  <div class="card filters">
+    <div class="group split">
+      <div>
+        <div class="group-title">
+          <span>種族</span>
+          <label><input type="checkbox" id="use-conv" checked>含可轉種族</label>
+        </div>
+        <div class="chips list" id="race-chips"></div>
+      </div>
+      <div>
+        <div class="group-title" title="只填最低就是 ≥，只填最高就是 ≤，都含等於">檔次（≥ 最低、≤ 最高）</div>
+        <div class="ranges list" id="stat-ranges"></div>
+      </div>
+      <div>
+        <div class="group-title" title="0 表示沒有該屬性">屬性（0–10）</div>
+        <div class="ranges list" id="elem-ranges"></div>
+        <div class="ranges list" id="misc-ranges" style="margin-top:8px;"></div>
+      </div>
+      <div>
+        <div class="group-title">技格</div>
+        <div class="chips list slots" id="slot-chips"></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="texts">
+        <label>寵物名稱<input type="text" id="q-name" placeholder="部分文字即可"></label>
+        <label>附註／取得方式<input type="text" id="q-note" placeholder="例如：必殺、中秋"></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div class="count" id="count"></div>
+    <button type="button" class="btn" id="clear">清空條件</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr id="head-row"></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const THEME_KEY = 'moli-calc-theme';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-app-theme', t);
+  document.getElementById('theme-toggle').textContent = (t === 'dark') ? '切換亮色' : '切換暗色';
+}
+let theme = 'light';
+try { theme = localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { theme = 'light'; }
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  theme = (theme === 'dark') ? 'light' : 'dark';
+  try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* 無法保存時仍可切換 */ }
+  applyTheme(theme);
+});
+applyTheme(theme);
+
+// ===================== 資料 =====================
+const RACES = ['人型系', '龍系', '不死系', '飛行系', '昆蟲系', '植物系', '野獸系', '特殊系', '金屬系', '邪魔系', '精靈族', '神族'];
+const ELEMS = ['地', '水', '火', '風'];
+const STATS = [['hp', '體力'], ['atk', '力量'], ['def', '強度'], ['agi', '速度'], ['mp', '魔法'], ['total', '總檔']];
+
+// CSV 欄位：寵物名,體檔,力檔,防檔,敏檔,魔檔,總檔,種族,屬性,騎速,技格,附註,取得方式,可轉種族
+function parsePets(text){
+  return text.trim().split(/\r?\n/).slice(1).map((line, i) => {
+    const c = line.split(',');
+    const elem = { 地: 0, 水: 0, 火: 0, 風: 0 };
+    for (const m of (c[8] || '').matchAll(/([地水火風])\s*(\d+)/g)) elem[m[1]] = Number(m[2]);
+    const ride = (c[9] || '').trim();
+    return {
+      idx: i,
+      name: c[0].trim(),
+      hp: +c[1], atk: +c[2], def: +c[3], agi: +c[4], mp: +c[5], total: +c[6],
+      race: c[7].trim(),
+      conv: (c[13] || '').split('/').map(s => s.trim()).filter(Boolean),
+      elem,
+      elemText: c[8].trim(),
+      ride,
+      // 有數字才算得出跑速；X 是不能騎，○ 是能騎但速度不明
+      speed: /^\d+$/.test(ride) ? Number(ride) : null,
+      slots: c[10].trim() === '' ? null : Number(c[10]),
+      note: (c[11] || '').trim(),
+      source: (c[12] || '').trim(),
+    };
+  });
+}
+const PETS = parsePets(window.PET_CSV || '');
+document.getElementById('sub').textContent = `依種族、檔次、屬性、跑速篩選寵物・共 ${PETS.length} 筆`;
+
+// ===================== 篩選介面 =====================
+const state = { races: new Set(), slots: new Set(), sortKey: null, sortDir: 1 };
+
+function chip(label, count, onClick){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'chip';
+  b.innerHTML = count == null ? label : `${label}<sup>${count}</sup>`;
+  b.addEventListener('click', () => { b.classList.toggle('on'); onClick(b.classList.contains('on')); render(); });
+  return b;
+}
+function toggleIn(set, v){ return on => on ? set.add(v) : set.delete(v); }
+
+const raceBox = document.getElementById('race-chips');
+for (const r of RACES) {
+  raceBox.appendChild(chip(r, PETS.filter(p => p.race === r).length, toggleIn(state.races, r)));
+}
+const slotBox = document.getElementById('slot-chips');
+for (let n = 4; n <= 10; n++) slotBox.appendChild(chip(String(n), null, toggleIn(state.slots, n)));
+
+// 最低／最高一組，id 用 min-<key>、max-<key>
+function rangeRow(box, key, label, max){
+  const d = document.createElement('div');
+  d.className = 'range';
+  const attrs = `type="number" inputmode="numeric" min="0"${max ? ` max="${max}"` : ''}`;
+  d.innerHTML = `<span class="lbl">${label}</span><input ${attrs} id="min-${key}" placeholder="最低"><span class="dash">–</span><input ${attrs} id="max-${key}" placeholder="最高">`;
+  box.appendChild(d);
+}
+for (const [k, l] of STATS) rangeRow(document.getElementById('stat-ranges'), k, l);
+for (const e of ELEMS) rangeRow(document.getElementById('elem-ranges'), e, `<span class="el-${e}">${e}</span>`, 10);
+rangeRow(document.getElementById('misc-ranges'), 'speed', '跑速');
+
+// 讀一組最低／最高，空白回傳 null
+function readRange(key){
+  const v = id => { const s = document.getElementById(id).value.trim(); return s === '' ? null : Number(s); };
+  return [v('min-' + key), v('max-' + key)];
+}
+function inRange(value, [lo, hi]){
+  if (lo == null && hi == null) return true;
+  if (value == null) return false;
+  return (lo == null || value >= lo) && (hi == null || value <= hi);
+}
+
+// ===================== 篩選與排序 =====================
+function filtered(){
+  const useConv = document.getElementById('use-conv').checked;
+  const qName = document.getElementById('q-name').value.trim();
+  const qNote = document.getElementById('q-note').value.trim();
+  const statR = STATS.map(([k]) => [k, readRange(k)]);
+  const elemR = ELEMS.map(e => [e, readRange(e)]);
+  const speedR = readRange('speed');
+  return PETS.filter(p => {
+    if (state.races.size && !state.races.has(p.race) && !(useConv && p.conv.some(r => state.races.has(r)))) return false;
+    if (state.slots.size && !state.slots.has(p.slots)) return false;
+    if (qName && !p.name.includes(qName)) return false;
+    if (qNote && !(p.note + ' ' + p.source).includes(qNote)) return false;
+    if (!statR.every(([k, r]) => inRange(p[k], r))) return false;
+    if (!elemR.every(([e, r]) => inRange(p.elem[e], r))) return false;
+    return inRange(p.speed, speedR);
+  });
+}
+
+// 表格欄位：[排序 key, 標題, 取排序值]；沒有值的一律排最後
+const COLS = [
+  ['name', '名稱', p => p.name],
+  ['race', '種族', p => RACES.indexOf(p.race)],
+  ['elem', '屬性', p => p.elemText],
+  ['hp', '體', p => p.hp], ['atk', '力', p => p.atk], ['def', '強', p => p.def],
+  ['agi', '速', p => p.agi], ['mp', '魔', p => p.mp], ['total', '總', p => p.total],
+  ['slots', '技格', p => p.slots],
+  ['speed', '跑速', p => p.speed],
+  ['note', '附註', p => p.note || null],
+  ['source', '取得方式', p => p.source || null],
+];
+
+function sorted(list){
+  if (!state.sortKey) return list;
+  const get = COLS.find(c => c[0] === state.sortKey)[2];
+  return list.slice().sort((a, b) => {
+    const x = get(a), y = get(b);
+    if (x == null || y == null) return (x == null) - (y == null) || a.idx - b.idx;
+    const d = typeof x === 'string' ? x.localeCompare(y, 'zh-Hant') : x - y;
+    return d * state.sortDir || a.idx - b.idx;
+  });
+}
+
+// 數字欄的標題跟內容一樣靠右
+const NUM_COLS = ['hp', 'atk', 'def', 'agi', 'mp', 'total', 'slots', 'speed'];
+const headRow = document.getElementById('head-row');
+for (const [key, label] of COLS) {
+  const th = document.createElement('th');
+  th.dataset.key = key;
+  th.textContent = label;
+  if (NUM_COLS.includes(key)) th.className = 'num';
+  // 第一次點由大到小（名稱除外），再點反過來，第三次回到原始順序
+  th.addEventListener('click', () => {
+    const first = key === 'name' || key === 'race' ? 1 : -1;
+    if (state.sortKey !== key) { state.sortKey = key; state.sortDir = first; }
+    else if (state.sortDir === first) state.sortDir = -first;
+    else state.sortKey = null;
+    render();
+  });
+  headRow.appendChild(th);
+}
+
+const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+function rowHtml(p){
+  const elems = ELEMS.filter(e => p.elem[e]).map(e => `<span class="el el-${e}">${e}${p.elem[e]}</span>`).join('');
+  const conv = p.conv.length ? `<span class="conv">可轉 ${esc(p.conv.join('、'))}</span>` : '';
+  return `<tr>
+    <td class="name">${esc(p.name)}</td>
+    <td class="race">${esc(p.race)}${conv}</td>
+    <td>${elems}</td>
+    <td class="num">${p.hp}</td><td class="num">${p.atk}</td><td class="num">${p.def}</td>
+    <td class="num">${p.agi}</td><td class="num">${p.mp}</td><td class="num">${p.total}</td>
+    <td class="num">${p.slots ?? ''}</td>
+    <td class="num">${esc(p.ride)}</td>
+    <td class="note">${esc(p.note)}</td>
+    <td class="note">${esc(p.source)}</td>
+  </tr>`;
+}
+
+function render(){
+  const list = sorted(filtered());
+  document.getElementById('count').innerHTML = `查詢到 <b>${list.length}</b> 筆`;
+  document.getElementById('rows').innerHTML = list.length
+    ? list.map(rowHtml).join('')
+    : `<tr><td colspan="${COLS.length}" class="empty">沒有符合條件的寵物</td></tr>`;
+  for (const th of headRow.children) {
+    const on = th.dataset.key === state.sortKey;
+    th.innerHTML = th.textContent.replace(/[▲▼]$/, '') + (on ? `<span class="arrow">${state.sortDir > 0 ? '▲' : '▼'}</span>` : '');
+  }
+}
+
+// 打字就即時篩選
+document.querySelector('.card').addEventListener('input', render);
+document.getElementById('clear').addEventListener('click', () => {
+  document.querySelectorAll('.card input[type=number], .card input[type=text]').forEach(i => { i.value = ''; });
+  document.getElementById('use-conv').checked = true;
+  document.querySelectorAll('.chip.on').forEach(b => b.classList.remove('on'));
+  state.races.clear();
+  state.slots.clear();
+  render();
+});
+render();
+</script>
+</body>
+</html>
