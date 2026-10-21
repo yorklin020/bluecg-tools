@@ -1,6 +1,6 @@
-﻿# 從上兩層的「寵物能力比較表.csv」產生 pet-data.js，給寵物圖鑑頁用
+﻿# 從「魔力寶貝寵物相關\寵物能力比較表.csv」產生 pet-data.js，給寵物圖鑑頁用
 # CSV 改完重跑一次：powershell -ExecutionPolicy Bypass -File build-pet-data.ps1
-$src = Join-Path $PSScriptRoot '..\..\寵物能力比較表.csv'
+$src = Join-Path $PSScriptRoot '..\..\魔力寶貝寵物相關\寵物能力比較表.csv'
 $dst = Join-Path $PSScriptRoot 'pet-data.js'
 
 $csv = [IO.File]::ReadAllText((Resolve-Path $src), [Text.Encoding]::UTF8).TrimEnd()
